@@ -265,7 +265,7 @@ local function RegisterBlizzardOptionsEntry()
     local btn = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     btn:SetSize(220, 30)
     btn:SetPoint("CENTER", panel, "CENTER", 0, 0)
-    btn:SetText("Open WindTools")
+    btn:SetText(L("Open WindTools"))
 
     btn:SetScript("OnClick", function()
         -- Close Blizzard settings first to avoid overlapping windows
