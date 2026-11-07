@@ -61,9 +61,10 @@ addon.RegisterOptionBuilder("advanced", function(parent, y, cat)
 	_, h = Widgets:SectionHeader(parent, MH("Developer"), y); y = y - h
 	do
 		_, h = Widgets:Dropdown(parent, "Log Level", y,
-			LOG_LEVEL_VALUES, LOG_LEVEL_ORDER,
+			LOG_LEVEL_VALUES,
 			function() return gdb.developer and gdb.developer.logLevel end,
 			function(v) gdb.developer = gdb.developer or {}; gdb.developer.logLevel = v end,
+			LOG_LEVEL_ORDER,
 			"Only display log message that the level is higher than you choose."); y = y - h
 		if gdb.developer and gdb.developer.tableAttributeDisplay then
 			local tad = gdb.developer.tableAttributeDisplay

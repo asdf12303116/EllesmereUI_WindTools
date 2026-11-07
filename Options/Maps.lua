@@ -99,8 +99,7 @@ local function BuildMinimap(parent, y, cat)
 			  getValue = DBGet(mb, "reverseOrder"), setValue = DBSet(mb, "reverseOrder") }
 		); y = y - h
 		_, h = Widgets:Dropdown(parent, "Orientation", y,
-			ORIENTATION_VALUES, ORIENTATION_ORDER,
-			DBGet(mb, "orientation"), DBSet(mb, "orientation"),
+			ORIENTATION_VALUES, DBGet(mb, "orientation"), DBSet(mb, "orientation"), ORIENTATION_ORDER,
 			"Arrangement direction of the bar."); y = y - h
 	end
 	return y

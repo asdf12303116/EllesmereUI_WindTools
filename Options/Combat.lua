@@ -69,8 +69,7 @@ local function BuildRaidMarkers(parent, y, cat)
 	); y = y - h
 	_, h = Widgets:SectionHeader(parent, MH("Raid Markers", "Visibility"), y); y = y - h
 	_, h = Widgets:Dropdown(parent, "Visibility", y,
-		VISIBILITY_VALUES, VISIBILITY_ORDER,
-		DBGetDefault(rm, "visibility", "DEFAULT"), DBSet(rm, "visibility", UpdateRaidMarkers), nil, rmDis); y = y - h
+		VISIBILITY_VALUES, DBGetDefault(rm, "visibility", "DEFAULT"), DBSet(rm, "visibility", UpdateRaidMarkers), VISIBILITY_ORDER, nil, rmDis); y = y - h
 	_, h = Widgets:DualRow(parent, y,
 		{ type = "toggle", text = "Mouse Over", tooltip = "Only show raid markers bar when you mouse over it.",
 		  getValue = DBGet(rm, "mouseOver"), setValue = DBSet(rm, "mouseOver", UpdateRaidMarkers), disabled = rmDis },
@@ -78,8 +77,7 @@ local function BuildRaidMarkers(parent, y, cat)
 		  getValue = DBGet(rm, "tooltip"), setValue = DBSet(rm, "tooltip", UpdateRaidMarkers), disabled = rmDis }
 	); y = y - h
 	_, h = Widgets:Dropdown(parent, "Modifier Key", y,
-		MODIFIER_VALUES, MODIFIER_ORDER,
-		DBGet(rm, "modifier"), DBSet(rm, "modifier", UpdateRaidMarkers),
+		MODIFIER_VALUES, DBGet(rm, "modifier"), DBSet(rm, "modifier", UpdateRaidMarkers), MODIFIER_ORDER,
 		"Set the modifier key for placing world markers.", rmDis); y = y - h
 	_, h = Widgets:SectionHeader(parent, MH("Raid Markers", "Bar"), y); y = y - h
 	_, h = Widgets:Toggle(parent, "Bar Backdrop", y,
@@ -170,16 +168,18 @@ local function BuildCombatAlert(parent, y, cat)
 	_, h = Widgets:Toggle(parent, "Enable", y,
 		DBGet2(ca, "enterSound", "enable"), DBSet2(ca, "enterSound", "enable"), nil, caDis); y = y - h
 	_, h = Widgets:Dropdown(parent, "Sound Channel", y,
-		SOUND_CHANNEL_VALUES, SOUND_CHANNEL_ORDER,
+		SOUND_CHANNEL_VALUES,
 		function() return ca.enterSound and ca.enterSound.channel or "Master" end,
-		DBSet2(ca, "enterSound", "channel"), nil, caDis); y = y - h
+		DBSet2(ca, "enterSound", "channel"),
+		SOUND_CHANNEL_ORDER, nil, caDis); y = y - h
 	_, h = Widgets:SectionHeader(parent, MH("Combat Alert", "Sound - Leave"), y); y = y - h
 	_, h = Widgets:Toggle(parent, "Enable", y,
 		DBGet2(ca, "leaveSound", "enable"), DBSet2(ca, "leaveSound", "enable"), nil, caDis); y = y - h
 	_, h = Widgets:Dropdown(parent, "Sound Channel", y,
-		SOUND_CHANNEL_VALUES, SOUND_CHANNEL_ORDER,
+		SOUND_CHANNEL_VALUES,
 		function() return ca.leaveSound and ca.leaveSound.channel or "Master" end,
-		DBSet2(ca, "leaveSound", "channel"), nil, caDis); y = y - h
+		DBSet2(ca, "leaveSound", "channel"),
+		SOUND_CHANNEL_ORDER, nil, caDis); y = y - h
 	return y
 end
 

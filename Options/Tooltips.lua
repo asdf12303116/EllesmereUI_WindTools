@@ -26,8 +26,7 @@ local function BuildGeneral(parent, y, cat)
 	local pdb = E.private.WT.tooltips
 	_, h = Widgets:SectionHeader(parent, MH("General"), y); y = y - h
 	_, h = Widgets:Dropdown(parent, "General Modifier Key", y,
-		MODIFIER_VALUES, MODIFIER_ORDER,
-		DBGet(pdb, "modifier"), DBSet(pdb, "modifier"),
+		MODIFIER_VALUES, DBGet(pdb, "modifier"), DBSet(pdb, "modifier"), MODIFIER_ORDER,
 		"The modifier key to show additional information from WindTools."); y = y - h
 	_, h = Widgets:SectionHeader(parent, MH("General", "Title Icon"), y); y = y - h
 	_, h = Widgets:Toggle(parent, "Enable", y,

@@ -76,14 +76,11 @@ addon.RegisterOptionBuilder("announcement", function(parent, y, cat)
 		); y = y - h
 
 		_, h = Widgets:Dropdown(parent, "In Party", y,
-			CHANNEL_PARTY, CHANNEL_PARTY_ORDER,
-			DBGet2(q, "channel", "party"), DBSet2(q, "channel", "party")); y = y - h
+			CHANNEL_PARTY, DBGet2(q, "channel", "party"), DBSet2(q, "channel", "party"), CHANNEL_PARTY_ORDER); y = y - h
 		_, h = Widgets:Dropdown(parent, "In Instance", y,
-			CHANNEL_INSTANCE, CHANNEL_INSTANCE_ORDER,
-			DBGet2(q, "channel", "instance"), DBSet2(q, "channel", "instance")); y = y - h
+			CHANNEL_INSTANCE, DBGet2(q, "channel", "instance"), DBSet2(q, "channel", "instance"), CHANNEL_INSTANCE_ORDER); y = y - h
 		_, h = Widgets:Dropdown(parent, "In Raid", y,
-			CHANNEL_RAID, CHANNEL_RAID_ORDER,
-			DBGet2(q, "channel", "raid"), DBSet2(q, "channel", "raid")); y = y - h
+			CHANNEL_RAID, DBGet2(q, "channel", "raid"), DBSet2(q, "channel", "raid"), CHANNEL_RAID_ORDER); y = y - h
 	end
 
 	_, h = Widgets:SectionHeader(parent, MH("Utility"), y); y = y - h
@@ -94,21 +91,25 @@ addon.RegisterOptionBuilder("announcement", function(parent, y, cat)
 			"Send the use of portals, ritual of summoning, feasts, etc."); y = y - h
 
 		_, h = Widgets:Dropdown(parent, "Solo", y,
-			CHANNEL_SOLO, CHANNEL_SOLO_ORDER,
+			CHANNEL_SOLO,
 			function() return u.channel and u.channel.solo end,
-			function(v) u.channel = u.channel or {}; u.channel.solo = v end); y = y - h
+			function(v) u.channel = u.channel or {}; u.channel.solo = v end,
+			CHANNEL_SOLO_ORDER); y = y - h
 		_, h = Widgets:Dropdown(parent, "In Party", y,
-			CHANNEL_PARTY, CHANNEL_PARTY_ORDER,
+			CHANNEL_PARTY,
 			function() return u.channel and u.channel.party end,
-			function(v) u.channel = u.channel or {}; u.channel.party = v end); y = y - h
+			function(v) u.channel = u.channel or {}; u.channel.party = v end,
+			CHANNEL_PARTY_ORDER); y = y - h
 		_, h = Widgets:Dropdown(parent, "In Instance", y,
-			CHANNEL_INSTANCE, CHANNEL_INSTANCE_ORDER,
+			CHANNEL_INSTANCE,
 			function() return u.channel and u.channel.instance end,
-			function(v) u.channel = u.channel or {}; u.channel.instance = v end); y = y - h
+			function(v) u.channel = u.channel or {}; u.channel.instance = v end,
+			CHANNEL_INSTANCE_ORDER); y = y - h
 		_, h = Widgets:Dropdown(parent, "In Raid", y,
-			CHANNEL_RAID, CHANNEL_RAID_ORDER,
+			CHANNEL_RAID,
 			function() return u.channel and u.channel.raid end,
-			function(v) u.channel = u.channel or {}; u.channel.raid = v end); y = y - h
+			function(v) u.channel = u.channel or {}; u.channel.raid = v end,
+			CHANNEL_RAID_ORDER); y = y - h
 
 		for _, cat in ipairs(UTILITY_CATEGORIES) do
 			local cd = u.general and u.general[cat.key]
@@ -144,8 +145,7 @@ addon.RegisterOptionBuilder("announcement", function(parent, y, cat)
 			  getValue = DBGet2(gb, "channel", "instance"), setValue = DBSet2(gb, "channel", "instance") }
 		); y = y - h
 		_, h = Widgets:Dropdown(parent, "In Raid", y,
-			CHANNEL_RAID, CHANNEL_RAID_ORDER,
-			DBGet2(gb, "channel", "raid"), DBSet2(gb, "channel", "raid")); y = y - h
+			CHANNEL_RAID, DBGet2(gb, "channel", "raid"), DBSet2(gb, "channel", "raid"), CHANNEL_RAID_ORDER); y = y - h
 	end
 
 	_, h = Widgets:SectionHeader(parent, MH("Reset Instance"), y); y = y - h
@@ -159,14 +159,11 @@ addon.RegisterOptionBuilder("announcement", function(parent, y, cat)
 			"Also announce when you change the instance difficulty."); y = y - h
 
 		_, h = Widgets:Dropdown(parent, "In Party", y,
-			CHANNEL_PARTY, CHANNEL_PARTY_ORDER,
-			DBGet2(ri, "channel", "party"), DBSet2(ri, "channel", "party")); y = y - h
+			CHANNEL_PARTY, DBGet2(ri, "channel", "party"), DBSet2(ri, "channel", "party"), CHANNEL_PARTY_ORDER); y = y - h
 		_, h = Widgets:Dropdown(parent, "In Instance", y,
-			CHANNEL_INSTANCE, CHANNEL_INSTANCE_ORDER,
-			DBGet2(ri, "channel", "instance"), DBSet2(ri, "channel", "instance")); y = y - h
+			CHANNEL_INSTANCE, DBGet2(ri, "channel", "instance"), DBSet2(ri, "channel", "instance"), CHANNEL_INSTANCE_ORDER); y = y - h
 		_, h = Widgets:Dropdown(parent, "In Raid", y,
-			CHANNEL_RAID, CHANNEL_RAID_ORDER,
-			DBGet2(ri, "channel", "raid"), DBSet2(ri, "channel", "raid")); y = y - h
+			CHANNEL_RAID, DBGet2(ri, "channel", "raid"), DBSet2(ri, "channel", "raid"), CHANNEL_RAID_ORDER); y = y - h
 	end
 
 	_, h = Widgets:SectionHeader(parent, MH("Keystone"), y); y = y - h
@@ -180,8 +177,7 @@ addon.RegisterOptionBuilder("announcement", function(parent, y, cat)
 			"Send the keystone to party or guild chat when someone use !keys command."); y = y - h
 
 		_, h = Widgets:Dropdown(parent, "In Party", y,
-			CHANNEL_PARTY, CHANNEL_PARTY_ORDER,
-			DBGet2(ks, "channel", "party"), DBSet2(ks, "channel", "party")); y = y - h
+			CHANNEL_PARTY, DBGet2(ks, "channel", "party"), DBSet2(ks, "channel", "party"), CHANNEL_PARTY_ORDER); y = y - h
 	end
 
 	return y
