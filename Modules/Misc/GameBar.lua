@@ -921,7 +921,12 @@ local ButtonTypes = {
 		end,
 	},
 	HOME = {
-		name = L["Home"],
+		-- EllesmereUI translates "Home" as the home latency row of its network
+		-- panel ("本地" / "本機"), and it registers that key after this addon's
+		-- catalog would, so asking for "Home" here would label the button with
+		-- the latency wording. "Housing" is the key EllesmereUI uses for the
+		-- housing system itself.
+		name = L["Housing"],
 		icon = W.Media.Icons.barHome,
 		-- The forever client has no housing service, so the slot would be dead.
 		available = function()
@@ -943,7 +948,7 @@ local ButtonTypes = {
 			end,
 		},
 		tooltips = {
-			L["Home"],
+			L["Housing"],
 			"\n",
 			LEFT_BUTTON_ICON .. " " .. L["Teleport to Home"],
 			RIGHT_BUTTON_ICON .. " " .. L["Housing Dashboard"],

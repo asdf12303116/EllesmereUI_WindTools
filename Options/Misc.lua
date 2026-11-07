@@ -94,7 +94,9 @@ local AVAILABLE_BUTTON_VALUES = {
 	PROFESSION = "Profession",
 	BAGS = "Bags",
 	SCREENSHOT = "Screenshot",
-	HOME = "Home",
+	-- Matches the game bar button, which asks for "Housing" because EllesmereUI
+	-- binds "Home" to the home latency row of its network panel.
+	HOME = "Housing",
 	HEARTHSTONE = "Hearthstone",
 	BLIZZARD_SHOP = "Blizzard Shop",
 	GAMEMENU = "Game Menu",
