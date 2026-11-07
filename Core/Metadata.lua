@@ -31,6 +31,11 @@ W.AsianLocale = W.ChineseLocale or W.Locale == "koKR"
 W.SupportElvUIVersion = 15.12
 W.UseKeyDown = C_CVar_GetCVarBool("ActionButtonUseKeyDown")
 
+-- The forever client is a separate game mode with its own micro menu and panel
+-- set, so modules ask this flag instead of sniffing project IDs again. Compare
+-- the project ID rather than a build number: the client is still a Mainline UI.
+W.IsForever = _G.WOW_PROJECT_CAMELOT ~= nil and _G.WOW_PROJECT_ID == _G.WOW_PROJECT_CAMELOT
+
 -- Game
 W.MaxLevelForPlayerExpansion = GetMaxLevelForPlayerExpansion()
 

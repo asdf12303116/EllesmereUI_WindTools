@@ -1366,10 +1366,13 @@ P.misc = {
 			[7] = "SCREENSHOT",
 		},
 		right = {
+			-- The forever client has no housing, encounter journal, mission
+			-- reports or achievements, so its default right panel swaps them for
+			-- panels it does ship rather than leaving empty slots behind.
 			[1] = "HEARTHSTONE",
-			[2] = "HOME",
-			[3] = "ACHIEVEMENTS",
-			[4] = "ENCOUNTER_JOURNAL",
+			[2] = W.IsForever and "LEGACY_CHALLENGES" or "HOME",
+			[3] = W.IsForever and "COLLECTIONS" or "ACHIEVEMENTS",
+			[4] = W.IsForever and "PROFESSION" or "ENCOUNTER_JOURNAL",
 			[5] = "TOY_BOX",
 			[6] = "PET_JOURNAL",
 			[7] = "BAGS",

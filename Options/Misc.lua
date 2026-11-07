@@ -21,6 +21,8 @@ local FONT_OUTLINE_VALUES = addon.FONT_OUTLINE_VALUES
 local FONT_OUTLINE_ORDER = addon.FONT_OUTLINE_ORDER
 local KeybindAliasEditorButton = addon.KeybindAliasEditorButton
 
+local tinsert = tinsert
+
 local ANIMATION_EASE_VALUES = {
 	linear = "Linear Ease",
 	quadratic = "Quadratic Ease",
@@ -83,6 +85,17 @@ local LFG_ICON_PACK_VALUES = {
 	DEFAULT = "Default",
 }
 
+-- Achievements and Legacy Challenges are separate panels that share an icon, and
+-- each exists on only one client. Availability is asked of the module that has
+-- to click the slot, so the dropdown cannot drift from what the bar can run.
+local function IsButtonAvailable(key)
+	local GB = W.Modules and W.Modules.GameBar
+	if not (GB and GB.IsButtonAvailable) then
+		return true
+	end
+	return GB:IsButtonAvailable(key)
+end
+
 local AVAILABLE_BUTTON_VALUES = {
 	NONE = "None",
 	CHARACTER = "Character",
@@ -92,6 +105,7 @@ local AVAILABLE_BUTTON_VALUES = {
 	GUILD = "Guild",
 	GROUP_FINDER = "Group Finder",
 	ACHIEVEMENTS = "Achievements",
+	LEGACY_CHALLENGES = "Legacy Challenges",
 	ENCOUNTER_JOURNAL = "Encounter Journal",
 	COLLECTIONS = "Collections",
 	TOY_BOX = "Toy Box",
@@ -106,12 +120,38 @@ local AVAILABLE_BUTTON_VALUES = {
 	GAMEMENU = "Game Menu",
 	VOLUME = "Volume",
 }
+-- Presentation order for the slot dropdowns; entries the current client cannot
+-- run are dropped by GetButtonOrder below.
 local AVAILABLE_BUTTON_ORDER = {
 	"NONE", "CHARACTER", "SPELLBOOK", "TALENTS", "FRIENDS", "GUILD", "GROUP_FINDER",
-	"ACHIEVEMENTS", "ENCOUNTER_JOURNAL", "COLLECTIONS", "TOY_BOX", "PET_JOURNAL",
-	"MISSION_REPORTS", "PROFESSION", "BAGS", "SCREENSHOT", "HOME", "HEARTHSTONE",
-	"BLIZZARD_SHOP", "GAMEMENU", "VOLUME",
+	"ACHIEVEMENTS", "LEGACY_CHALLENGES", "ENCOUNTER_JOURNAL", "COLLECTIONS", "TOY_BOX",
+	"PET_JOURNAL", "MISSION_REPORTS", "PROFESSION", "BAGS", "SCREENSHOT", "HOME",
+	"HEARTHSTONE", "BLIZZARD_SHOP", "GAMEMENU", "VOLUME",
 }
+
+local function GetButtonOrder()
+	local order = {}
+	for _, key in ipairs(AVAILABLE_BUTTON_ORDER) do
+		if IsButtonAvailable(key) then
+			tinsert(order, key)
+		end
+	end
+	return order
+end
+
+local function GetSlotValue(list, index)
+	local key = list and list[index]
+	-- A profile carried over from the other client can name a panel that does not
+	-- exist here; the bar renders that slot empty, so the dropdown shows the same.
+	if key and not IsButtonAvailable(key) then
+		return "NONE"
+	end
+	return key
+end
+
+local BUTTON_SLOT_TOOLTIP = "Pick the action for this slot. "
+	.. "Achievements and Legacy Challenges exist on different clients; "
+	.. "Collections and Pets also provide a right click action."
 
 local TOOLTIP_ANCHOR_VALUES = { ANCHOR_TOP = "TOP", ANCHOR_BOTTOM = "BOTTOM" }
 local TOOLTIP_ANCHOR_ORDER = { "ANCHOR_TOP", "ANCHOR_BOTTOM" }
@@ -531,21 +571,23 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 			DBSet2(gb, "groupFinder", "preferNetEaseMeetingStone", gbRefresh),
 			"If Meeting Stone is installed, left click the Group Finder button to open NetEase Meeting Stone instead of the Blizzard one."); y = y - h
 
+		local buttonOrder = GetButtonOrder()
+
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Left Panel"), y); y = y - h
 		for i = 1, 7 do
 			_, h = Widgets:Dropdown(parent, ("Button #%d"):format(i), y,
 				AVAILABLE_BUTTON_VALUES,
-				function() return gb.left and gb.left[i] end,
-				function(v) gb.left = gb.left or {}; gb.left[i] = v end,
-				AVAILABLE_BUTTON_ORDER); y = y - h
+				function() return GetSlotValue(gb.left, i) end,
+				function(v) gb.left = gb.left or {}; gb.left[i] = v; gbRefresh() end,
+				buttonOrder, BUTTON_SLOT_TOOLTIP); y = y - h
 		end
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Right Panel"), y); y = y - h
 		for i = 1, 7 do
 			_, h = Widgets:Dropdown(parent, ("Button #%d"):format(i), y,
 				AVAILABLE_BUTTON_VALUES,
-				function() return gb.right and gb.right[i] end,
-				function(v) gb.right = gb.right or {}; gb.right[i] = v end,
-				AVAILABLE_BUTTON_ORDER); y = y - h
+				function() return GetSlotValue(gb.right, i) end,
+				function(v) gb.right = gb.right or {}; gb.right[i] = v; gbRefresh() end,
+				buttonOrder, BUTTON_SLOT_TOOLTIP); y = y - h
 		end
 	end
 

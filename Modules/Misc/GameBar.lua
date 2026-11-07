@@ -8,6 +8,24 @@ local PP = EUI and EUI.PP
 
 local NORM_TEX = "Interface\\Buttons\\WHITE8x8"
 
+-- The forever client is its own game mode with its own micro menu: it ships no
+-- AchievementMicroButton and hides the random favourite mount and pet entries.
+local IS_FOREVER = W.IsForever
+
+-- Tooltip lines are collected instead of listed so a line describing an action
+-- the client does not have can be left out; ipairs stops at the first hole, so
+-- a nil entry in the middle would silently drop everything after it.
+local function TooltipLines(...)
+	local lines = {}
+	for index = 1, select("#", ...) do
+		local line = select(index, ...)
+		if line then
+			lines[#lines + 1] = line
+		end
+	end
+	return lines
+end
+
 local _G = _G
 local collectgarbage = collectgarbage
 local date = date
@@ -627,16 +645,38 @@ function GB:StepMasterVolume(delta)
 end
 
 local ButtonTypes = {
+	-- Achievements and Legacy Challenges are two different panels that only share
+	-- an icon: the live client ships the achievement frame, the forever client
+	-- replaced it with Legacy Challenges. Keeping them as separate slots means the
+	-- dropdown only ever lists the one this client can actually open.
 	ACHIEVEMENTS = {
 		name = L["Achievements"],
 		icon = W.Media.Icons.barAchievements,
+		available = function()
+			return not IS_FOREVER
+		end,
 		macro = {
 			-- SLASH_ACHIEVEMENTUI1 is the localized slash command; the micro
-			-- button is singular (AchievementMicroButton) on both live and forever.
+			-- button is singular (AchievementMicroButton) where it exists.
 			LeftButton = _G.SLASH_ACHIEVEMENTUI1 or "/click AchievementMicroButton",
 		},
 		tooltips = {
 			L["Achievements"],
+		},
+	},
+	LEGACY_CHALLENGES = {
+		name = L["Legacy Challenges"],
+		icon = W.Media.Icons.barAchievements,
+		available = function()
+			return IS_FOREVER
+		end,
+		click = {
+			LeftButton = function()
+				_G.ToggleLegacyChallenges()
+			end,
+		},
+		tooltips = {
+			L["Legacy Challenges"],
 		},
 	},
 	BAGS = {
@@ -689,18 +729,25 @@ local ButtonTypes = {
 		icon = W.Media.Icons.barCollections,
 		macro = {
 			LeftButton = "/click CollectionsJournalCloseButton\n/click CollectionsMicroButton\n/click CollectionsJournalTab1",
-			RightButton = "/run C_MountJournal.SummonByID(0)",
+			-- The client without the random favourite mount entry has nothing to
+			-- summon, so the right click action is left out rather than broken.
+			RightButton = (not IS_FOREVER) and "/run C_MountJournal.SummonByID(0)" or nil,
 		},
-		tooltips = {
+		tooltips = TooltipLines(
 			L["Collections"],
 			"\n",
 			LEFT_BUTTON_ICON .. " " .. L["Show Collections"],
-			RIGHT_BUTTON_ICON .. " " .. L["Random Favorite Mount"],
-		},
+			(not IS_FOREVER) and (RIGHT_BUTTON_ICON .. " " .. L["Random Favorite Mount"]) or nil
+		),
 	},
 	ENCOUNTER_JOURNAL = {
 		name = L["Encounter Journal"],
 		icon = W.Media.Icons.barEncounterJournal,
+		-- The forever client has no encounter journal content and no weekly
+		-- rewards, so both clicks would open nothing.
+		available = function()
+			return not IS_FOREVER
+		end,
 		macro = {
 			LeftButton = "/click EJMicroButton",
 			RightButton = "/run WeeklyRewards_ShowUI()",
@@ -874,6 +921,10 @@ local ButtonTypes = {
 	HOME = {
 		name = L["Home"],
 		icon = W.Media.Icons.barHome,
+		-- The forever client has no housing service, so the slot would be dead.
+		available = function()
+			return not IS_FOREVER
+		end,
 		click = {
 			LeftButton = function()
 				_G.UIErrorsFrame:AddMessage(L["House data cannot be updated in combat."], RED_FONT_COLOR:GetRGBA())
@@ -899,6 +950,10 @@ local ButtonTypes = {
 	MISSION_REPORTS = {
 		name = L["Mission Reports"],
 		icon = W.Media.Icons.barMissionReports,
+		-- Garrisons and missions do not exist on the forever client.
+		available = function()
+			return not IS_FOREVER
+		end,
 		click = {
 			LeftButton = function()
 				if not InCombatLockdown() then
@@ -940,14 +995,17 @@ local ButtonTypes = {
 		icon = W.Media.Icons.barPetJournal,
 		macro = {
 			LeftButton = "/click CollectionsJournalCloseButton\n/click CollectionsMicroButton\n/click CollectionsJournalTab2",
-			RightButton = "/run C_PetJournal.SummonRandomPet(C_PetJournal.HasFavoritePets());",
+			-- Same as Collections: no random favourite entry, no right click.
+			RightButton = (not IS_FOREVER)
+					and "/run C_PetJournal.SummonRandomPet(C_PetJournal.HasFavoritePets());"
+				or nil,
 		},
-		tooltips = {
+		tooltips = TooltipLines(
 			L["Pet Journal"],
 			"\n",
 			LEFT_BUTTON_ICON .. " " .. L["Show Pet Journal"],
-			RIGHT_BUTTON_ICON .. " " .. L["Random Favorite Pet"],
-		},
+			(not IS_FOREVER) and (RIGHT_BUTTON_ICON .. " " .. L["Random Favorite Pet"]) or nil
+		),
 	},
 	PROFESSION = {
 		name = L["Profession"],
@@ -1634,10 +1692,14 @@ function GB:UpdateButton(button, buttonType)
 		return
 	end
 
+	-- A saved profile can name a button this client cannot run (Achievements vs
+	-- Legacy Challenges) or one this build no longer has; either way the slot
+	-- renders empty instead of indexing nil below.
+	if buttonType and not self:IsButtonAvailable(buttonType) then
+		buttonType = "NONE"
+	end
 	local config = buttonType and ButtonTypes[buttonType]
 	if not config then
-		-- A saved profile can name a button this build no longer has; treat it
-		-- as an empty slot instead of indexing nil below.
 		config = ButtonTypes.NONE
 		buttonType = "NONE"
 	end
@@ -2227,11 +2289,23 @@ function GB:GetHearthStoneTable(includeSpell)
 	return filteredTable
 end
 
+function GB:IsButtonAvailable(buttonType)
+	local config = ButtonTypes[buttonType]
+	if not config then
+		return false
+	end
+
+	local check = config.available
+	return not check or check()
+end
+
 function GB:GetAvailableButtons()
 	local buttons = {}
 
 	for key, data in pairs(ButtonTypes) do
-		buttons[key] = data.name
+		if self:IsButtonAvailable(key) then
+			buttons[key] = data.name
+		end
 	end
 
 	return buttons
