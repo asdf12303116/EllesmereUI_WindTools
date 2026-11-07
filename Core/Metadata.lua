@@ -16,7 +16,7 @@ local GetSpecializationInfoForClassID = GetSpecializationInfoForClassID
 
 local C_ChallengeMode_GetMapUIInfo = C_ChallengeMode.GetMapUIInfo
 local C_CVar_GetCVarBool = C_CVar.GetCVarBool
-local C_LootJournal_GetItemSetItems = C_LootJournal.GetItemSetItems
+local C_LootJournal_GetItemSetItems = C_LootJournal and C_LootJournal.GetItemSetItems
 
 E.myClassColor = E.myClassColor or E:ClassColor(E.myclass, true)
 
@@ -223,9 +223,17 @@ W.CurrentTierSetTable = {
 ---@type table<number, true>
 W.CurrentTierSetItemIDTable = {}
 
-for id in pairs(W.CurrentTierSetTable) do
-	for _, itemInfo in pairs(C_LootJournal_GetItemSetItems(id)) do
-		W.CurrentTierSetItemIDTable[itemInfo.itemID] = true
+-- The forever client ships without the loot journal, and the API is also
+-- documented as MayReturnNothing, so both the function and its result are
+-- checked before the table is walked.
+if C_LootJournal_GetItemSetItems then
+	for id in pairs(W.CurrentTierSetTable) do
+		local items = C_LootJournal_GetItemSetItems(id)
+		if items then
+			for _, itemInfo in pairs(items) do
+				W.CurrentTierSetItemIDTable[itemInfo.itemID] = true
+			end
+		end
 	end
 end
 

@@ -27,6 +27,7 @@ local tinsert = tinsert
 local tonumber = tonumber
 local tostring = tostring
 local type = type
+local xpcall = xpcall
 
 local BNGetNumFriends = BNGetNumFriends
 local CloseAllWindows = CloseAllWindows
@@ -2157,8 +2158,12 @@ function GB:UpdateHearthStoneTable()
 
 	if covenantHearthstones and GetAchievementCriteriaInfo then
 		for toyID, config in pairs(covenantHearthstones) do
-			local criteriaCompleted = select(3, GetAchievementCriteriaInfo(15646, config.achievementCriteriaNum))
-			hearthstonesTable[toyID] = criteriaCompleted or activeCovenantID == config.covenantID
+			-- A client without achievement 15646 raises instead of returning nil,
+			-- so the probe is isolated and a failure reads as "not yet earned".
+			local ok, _, _, completed = xpcall(function()
+				return GetAchievementCriteriaInfo(15646, config.achievementCriteriaNum)
+			end, F.Developer.LogDebug)
+			hearthstonesTable[toyID] = (ok and completed) or activeCovenantID == config.covenantID
 		end
 	end
 
