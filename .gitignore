@@ -5,8 +5,14 @@
 !.vscode/settings.json
 !.vscode/extensions.json
 
+# IDE 工程目录，各机器不同
+.idea/
+
 check.txt
 !.luarc.json
 
 # 本地打包产物（package.ps1）
 .release/
+
+# 本地备份与临时校验（AGENTS.md D1）
+backups/
