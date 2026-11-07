@@ -172,79 +172,36 @@ addon.Print = Print
 local CATEGORY_TITLES = {
     information    = "Information",
     misc           = "Misc",
-    announcement   = "Announcement",
-    item           = "Item",
     extraItemsBar  = "Extra Items Bar",
     combat         = "Combat",
     social         = "Social",
-    maps           = "Maps",
-    quest          = "Quest",
-    tooltips       = "Tooltips",
     unitFrames     = "Unit Frames",
-    skins          = "Skins",
     advanced       = "Advanced",
 }
 
 -- All pages and their category mappings (flat, used by BuildPage).
+--
+-- A page is listed only when the module behind it is actually loaded (see
+-- Modules/Load_Modules.xml). Pages for unported modules are absent rather than
+-- disabled, so the settings panel never offers a control that does nothing.
 local PAGE_GROUPS = {{
     page = "Information",       categories = {"information"}
 }, {
     page = "General",           categories = {"misc"}
 }, {
     -- Game Bar owns a page of its own even though its options live in the Misc
-    -- options file: the rest of that category is still unported, so a shared
-    -- page could never be enabled without exposing a dozen dead toggles.
+    -- options file: that file also carries the CVars editor, which belongs to
+    -- the General page.
     page = "Game Bar",          categories = {"misc"}
-}, {
-    page = "Loot & Trade",      categories = {"item"}
-}, {
-    page = "Display",           categories = {"item"}
-}, {
-    page = "Inspect",           categories = {"item"}
-}, {
-    page = "Item Level",        categories = {"item"}
-}, {
-    page = "Merchant",          categories = {"item"}
 }, {
     page = "Extra Items Bar",   categories = {"extraItemsBar"}
 }, {
-    page = "Announcement",      categories = {"announcement"}
-}, {
-    -- Original WindTools layout: a single Combat category page holding every
-    -- combat module group (Raid Markers, Combat Alert, Quick Tools, Damage
-    -- Meter Layout) inline.
     page = "Combat",            categories = {"combat"}
 }, {
     page = "Chat Bar",          categories = {"social"}
 }, {
     page = "Smart Tab",         categories = {"social"}
 }, {
-    page = "Super Tracker",     categories = {"maps"}
-}, {
-    page = "Minimap",           categories = {"maps"}
-}, {
-    page = "World Map",         categories = {"maps"}
-}, {
-    page = "Difficulty & Events", categories = {"maps"}
-}, {
-    page = "Objective Tracker", categories = {"quest"}
-}, {
-    page = "Automation",        categories = {"quest"}
-}, {
-    page = "Progress & Turn In", categories = {"quest"}
-}, {
-    page = "Achievement",       categories = {"quest"}
-}, {
-    page = "Tooltip Info",      categories = {"tooltips"}
-}, {
-    page = "Progression",       categories = {"tooltips"}
-}, {
-    page = "Keystone & Group Info", categories = {"tooltips"}
-}, {
-    page = "Tooltip Advanced",  categories = {"tooltips"}
-}, {
-    -- Original WindTools layout: a single Unit Frames category page holding
-    -- every unitframe module group (Quick Focus, Absorb, Name Clip) inline.
     page = "Unit Frames",       categories = {"unitFrames"}
 }, {
     page = "Advanced",          categories = {"advanced"}

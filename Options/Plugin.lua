@@ -29,9 +29,9 @@ end
 -- builder registered under its category.
 local PLUGIN_ID = "EllesmereUI_WindTools"
 
--- Grouping follows the seven blocks the pages were always split into, because
--- RegisterPlugin allows 20 modules and 20 pages per module while the pages
--- themselves number 27: one module per page would exceed the limit.
+-- Grouping follows the page list in Initialize.lua. A module is listed only
+-- when the module behind it is loaded, so every page reachable here has a
+-- working backend.
 --
 -- The order inside pages is the reading order a user follows while setting the
 -- addon up, not the load order of the option files.
@@ -45,40 +45,28 @@ local MODULES = {
 	{
 		key = "Items",
 		title = "Items",
-		description = "Looting, trading, and the item tooltips shown in bags and merchants.",
-		pages = { "Loot & Trade", "Display", "Inspect", "Item Level", "Merchant", "Extra Items Bar" },
+		description = "The extra action bars shown next to the Blizzard bars.",
+		pages = { "Extra Items Bar" },
 	},
 	{
 		key = "Combat",
 		title = "Combat",
-		description = "Raid markers, combat alerts, and the damage meter layout.",
+		description = "World markers placed from a movable bar.",
 		pages = { "Combat" },
 	},
 	{
 		key = "Social",
 		title = "Social",
-		description = "Chat bar, chat tab behaviour, and announcements.",
-		pages = { "Chat Bar", "Smart Tab", "Announcement" },
-	},
-	{
-		key = "Maps",
-		title = "Maps",
-		description = "Super tracker, minimap, world map, and difficulty displays.",
-		pages = { "Super Tracker", "Minimap", "World Map", "Difficulty & Events" },
-	},
-	{
-		key = "Quest",
-		title = "Quest",
-		description = "Objective tracker, quest automation, and achievement helpers.",
-		pages = { "Objective Tracker", "Automation", "Progress & Turn In", "Achievement" },
+		description = "Chat bar and chat tab behaviour.",
+		pages = { "Chat Bar", "Smart Tab" },
 	},
 	{
 		-- No space in the key: it has to match ^%a[%w_%-]*$. The title carries
 		-- the readable form.
 		key = "UITweaks",
 		title = "UI Tweaks",
-		description = "Tooltips, progression text, keystone info, and unit frames.",
-		pages = { "Tooltip Info", "Progression", "Keystone & Group Info", "Tooltip Advanced", "Unit Frames" },
+		description = "Quick focus, friendly nameplate outline, and related frames.",
+		pages = { "Unit Frames" },
 	},
 }
 
@@ -204,19 +192,9 @@ local RESET_SLICES = {
 	General = { { "profile", "misc" }, { "global", "core" }, { "global", "developer" } },
 	Items = { { "profile", "item" }, { "private", "item" }, { "global", "item" } },
 	Combat = { { "profile", "combat" }, { "private", "combat" } },
-	-- announcement sits in its own profile key but every page it feeds lives in
-	-- this module, so a Social reset that skipped it would leave those pages
-	-- configured differently from the rest of the module.
-	Social = {
-		{ "profile", "social" }, { "private", "social" }, { "global", "social" },
-		{ "profile", "announcement" },
-	},
-	Maps = { { "profile", "maps" }, { "private", "maps" }, { "global", "maps" } },
-	Quest = { { "profile", "quest" }, { "private", "quest" } },
+	Social = { { "profile", "social" }, { "private", "social" }, { "global", "social" } },
 	UITweaks = {
-		{ "profile", "tooltips" }, { "private", "tooltips" },
 		{ "profile", "unitFrames" }, { "private", "unitFrames" },
-		{ "profile", "skins" },
 	},
 }
 
