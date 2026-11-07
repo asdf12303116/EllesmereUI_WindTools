@@ -261,11 +261,16 @@ end
 -- Search still indexes a page once it has been opened for real.
 local function BuildSpec()
 	local modules = {}
+	-- RegisterPlugin has no field for a plugin version, and the description is
+	-- the only line it redraws on every module switch, so the version rides
+	-- along with it. Only a development build names itself here.
+	local version = addon.GetDevelopmentVersion and addon.GetDevelopmentVersion()
+	local suffix = version and (" (dev " .. version .. ")") or nil
 	for index, module in ipairs(MODULES) do
 		modules[index] = {
 			key = module.key,
 			title = module.title,
-			description = module.description,
+			description = suffix and (module.description .. suffix) or module.description,
 			pages = module.pages,
 			buildPage = BuildPage,
 			-- Only the extra items bar page pins a header today, but the getter

@@ -1,4 +1,4 @@
-local addon = select(2, ...)
+local addonName, addon = ...
 
 local xpcall = xpcall
 local geterrorhandler = geterrorhandler
@@ -6,12 +6,14 @@ local tonumber = tonumber
 local type = type
 local tostring = tostring
 local pairs = pairs
+local strfind = strfind
 local table_insert = table.insert
 local table_remove = table.remove
 local IsShiftKeyDown = IsShiftKeyDown
 local IsControlKeyDown = IsControlKeyDown
 local IsAltKeyDown = IsAltKeyDown
 
+local C_AddOns_GetAddOnMetadata = _G.C_AddOns and _G.C_AddOns.GetAddOnMetadata
 local C_CVar_GetCVar = C_CVar.GetCVar
 local C_CVar_GetCVarBool = C_CVar.GetCVarBool
 local C_CVar_SetCVar = C_CVar.SetCVar
@@ -34,6 +36,22 @@ function addon.MakeHeader(cat, module, sub)
 		return L(cat) .. " · " .. L(module) .. " · " .. L(sub)
 	end
 	return L(cat) .. " · " .. L(module)
+end
+
+-- Only a development build names itself: the packager sets ## Version to
+-- "0.2.8-8b28c90" while ## X-Version stays the plain "0.2.8", so the two
+-- disagreeing is what marks one. A release has no build id worth showing, and a
+-- working copy still carries the raw "@project-version@" placeholder.
+--- @return string? version
+function addon.GetDevelopmentVersion()
+	if not C_AddOns_GetAddOnMetadata then return nil end
+
+	local version = C_AddOns_GetAddOnMetadata(addonName, "Version")
+	if type(version) ~= "string" or version == "" then return nil end
+	if strfind(version, "^@") then return nil end
+	if version == C_AddOns_GetAddOnMetadata(addonName, "X-Version") then return nil end
+
+	return version
 end
 
 local function SafeCall(func, ...)

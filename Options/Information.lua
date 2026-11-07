@@ -1,5 +1,4 @@
 local addon = select(2, ...)
-local W = addon[1]
 local E = addon[3]
 
 addon.RegisterOptionBuilder("information", function(parent, y, cat)
@@ -9,7 +8,10 @@ addon.RegisterOptionBuilder("information", function(parent, y, cat)
 
 	_, h = Widgets:SectionHeader(parent, MH("WindTools"), y); y = y - h
 
-	_, h = Widgets:Button(parent, "Version: " .. tostring(W.Version), y, function() end); y = y - h
+	local devVersion = addon.GetDevelopmentVersion and addon.GetDevelopmentVersion()
+	if devVersion then
+		_, h = Widgets:Button(parent, "Development Version: " .. tostring(devVersion), y, function() end); y = y - h
+	end
 
 	_, h = Widgets:SectionHeader(parent, MH("Help"), y); y = y - h
 
