@@ -183,15 +183,15 @@ function Invoke-TextProcessing {
 function Remove-WithRetry {
     param([string]$Path)
     if (-not (Test-Path -LiteralPath $Path)) { return }
-    # 上一次打包的产物可能还被杀软/索引器短暂占着，等一下再删
-    for ($attempt = 1; $attempt -le 10; $attempt++) {
+    # 上一次打包的产物可能还被杀软/索引器/解压软件短暂占着，等一下再删
+    for ($attempt = 1; $attempt -le 20; $attempt++) {
         try {
             Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
             return
         }
         catch {
-            if ($attempt -eq 10) { throw "删不掉 $Path（被其它进程占用）：$($_.Exception.Message)" }
-            Start-Sleep -Milliseconds 300
+            if ($attempt -eq 20) { throw "删不掉 $Path（被其它进程占用）：$($_.Exception.Message)。关掉正在预览这个 zip 的程序再试。" }
+            Start-Sleep -Milliseconds 750
         }
     }
 }
@@ -334,9 +334,39 @@ foreach ($key in @($substitutions.Keys)) {
 }
 
 # ---------- 3. 收集文件 ----------
-# 不传 -Force：以点开头的条目本来就不进包，顺便跳掉 .git 这种大目录
-$sourceFiles = Get-ChildItem -LiteralPath $Root -Recurse -File |
-    Where-Object { -not $_.FullName.StartsWith($OutDir, [System.StringComparison]::OrdinalIgnoreCase) }
+# 候选集以 .gitignore 为准：git 会跟踪的文件 = 已跟踪 + 未跟踪但未被忽略。
+# backups\、.release\ 这类本地目录因此不会混进包，和 CI 在干净检出上打包的结果一致。
+$gitPaths = $null
+$listed = $null
+$gitOk = $false
+if (Get-Command git -ErrorAction SilentlyContinue) {
+    try {
+        $listed = & git -C $Root ls-files -z --cached --others --exclude-standard 2>$null
+        $gitOk = ($LASTEXITCODE -eq 0)
+    } catch {
+        $gitOk = $false
+    }
+}
+if ($gitOk -and $listed) {
+    $gitPaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    foreach ($entry in ($listed -split "`0")) {
+        if ($entry) { [void]$gitPaths.Add(($entry -replace '\\', '/')) }
+    }
+}
+
+if ($gitPaths) {
+    $sourceFiles = @(
+        foreach ($entry in $gitPaths) {
+            $full = Join-Path $Root $entry
+            # 索引里有、工作副本已删掉的文件跳过；子模块这类目录条目也在这里被滤掉
+            if (Test-Path -LiteralPath $full -PathType Leaf) { Get-Item -LiteralPath $full }
+        }
+    )
+} else {
+    Write-Warning 'git 不可用，退回目录扫描：.gitignore 里排除的目录不会自动跳过，检查产物再发布。'
+    $sourceFiles = @(Get-ChildItem -LiteralPath $Root -Recurse -File |
+        Where-Object { -not $_.FullName.StartsWith($OutDir, [System.StringComparison]::OrdinalIgnoreCase) })
+}
 
 $selected = New-Object System.Collections.Generic.List[object]
 $ignoredCount = 0
