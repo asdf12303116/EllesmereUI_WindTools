@@ -332,6 +332,11 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 	local ebDis = function() return not db.enable end
 
 	_, h = Widgets:SectionHeader(parent, MH("General"), y); y = y - h
+	-- The sidebar used to carry this switch; the page owns it now that the
+	-- standalone panel is gone.
+	_, h = Widgets:Toggle(parent, "Enable", y,
+		DBGet(db, "enable"), DBSet(db, "enable", updateBars),
+		"Toggle the extra items bar module."); y = y - h
 	_, h = Widgets:Toggle(parent, "No Quantum Items", y,
 		DBGet(db, "noQuantumItems"), DBSet(db, "noQuantumItems", updateBars),
 		"Automatically blacklist the quantum items."); y = y - h

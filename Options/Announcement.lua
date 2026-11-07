@@ -45,6 +45,12 @@ addon.RegisterOptionBuilder("announcement", function(parent, y, cat)
 	local db = E.db.WT.announcement
 
 	_, h = Widgets:SectionHeader(parent, MH("General"), y); y = y - h
+	-- The sidebar used to carry this switch; the page owns it now that the
+	-- standalone panel is gone.
+	_, h = Widgets:Toggle(parent, "Enable", y,
+		DBGet(db, "enable"),
+		DBSet(db, "enable", function() SafeModuleCall(W.Modules.Announcement, "ProfileUpdate") end),
+		"Toggle the announcement module."); y = y - h
 	_, h = Widgets:Slider(parent, "Same Message Interval", y, 0, 3600, 1,
 		DBGet(db, "sameMessageInterval"), DBSet(db, "sameMessageInterval"),
 		"Time interval between sending same messages measured in seconds. Set to 0 to disable."); y = y - h

@@ -133,6 +133,11 @@ local function BuildInspect(parent, y, cat)
 	do
 		local is = db.inspect
 		local isDis = function() return not is.enable end
+		-- The sidebar used to carry this switch; the page owns it now that the
+		-- standalone panel is gone.
+		_, h = Widgets:Toggle(parent, "Enable", y,
+			DBGet(is, "enable"), DBSet(is, "enable"),
+			"Toggle the inspect module."); y = y - h
 	_, h = Widgets:SectionHeader(parent, MH("Inspect", "Lists"), y); y = y - h
 		_, h = Widgets:DualRow(parent, y,
 			{ type = "toggle", text = "Player", tooltip = "Add a frame to your character panel.",
@@ -212,6 +217,11 @@ local function BuildItemLevel(parent, y, cat)
 		local il = db.itemLevel
 		local ilDis = function() return not il.enable end
 
+		-- The sidebar used to carry this switch; the page owns it now that the
+		-- standalone panel is gone.
+		_, h = Widgets:Toggle(parent, "Enable", y,
+			DBGet(il, "enable"), DBSet(il, "enable"),
+			"Toggle the item level module."); y = y - h
 		_, h = Widgets:SectionHeader(parent, MH("Item Level", "Flyout Button"), y); y = y - h
 		do
 			local fo = il.flyout

@@ -14,13 +14,13 @@
 
 - Original project: [wind-addons/ElvUI_WindTools](https://github.com/wind-addons/ElvUI_WindTools)
 - Dependencies: requires **EllesmereUI** to be installed
-- The standalone WindTools options panel is included; only modules listed below have been ported so far.
+- The settings pages are registered into the **EllesmereUI** options panel; only modules listed below have been ported so far.
 
 ## 📋 Migration Progress
 
 | Module | Status | Notes |
 |---|---|---|
-| Options Panel (standalone) | ✅ Done | Sidebar navigation, search, per-page settings; unsupported pages are disabled |
+| Options Panel | ✅ Done | Merged into the EllesmereUI options panel; unsupported pages are disabled |
 | **Extra Items Bar** | ✅ Done | 5 customizable bars, keybinds, auto hide when empty |
 | **Chat Bar** | ✅ Done | Channel switching bar, block/text styles, auto-hide, mouseover |
 | **Smart Tab** | ✅ Done | Tab channel cycling, whisper history, channel toggles |

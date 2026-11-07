@@ -51,6 +51,12 @@ local function BuildChatBar(parent, y, cat)
 	end
 
 	_, h = Widgets:SectionHeader(parent, L("Chat Bar"), y); y = y - h
+	-- The sidebar used to carry this switch; the page owns it now that the
+	-- standalone panel is gone.
+	_, h = Widgets:Toggle(parent, "Enable", y,
+		DBGet(cb, "enable"),
+		DBSet(cb, "enable", function() SafeModuleCall(W.Modules.ChatBar, "ProfileUpdate") end),
+		"Toggle the chat bar."); y = y - h
 	local row2
 	row2, h = Widgets:DualRow(parent, y,
 		{ type="toggle", text="Auto Hide", tooltip="Hide channels that do not exist.",
@@ -155,6 +161,16 @@ local function BuildSmartTab(parent, y, cat)
 	local st = E.db.WT.social.smartTab
 	local stDis = function() return not st.enable end
 	_, h = Widgets:SectionHeader(parent, L("SmartTab"), y); y = y - h
+	-- The sidebar used to carry this switch; the page owns it now that the
+	-- standalone panel is gone. The chat edit hook is installed once at login,
+	-- so turning the module back on only takes effect after a reload.
+	_, h = Widgets:Toggle(parent, "Enable", y,
+		DBGet(st, "enable"),
+		DBSet(st, "enable", function()
+			SafeModuleCall(W.Modules.SmartTab, "ProfileUpdate")
+			addon.PromptReload("Smart Tab registers its chat edit box hook at login, so the change applies after a UI reload.")
+		end),
+		"Toggle the SmartTab module."); y = y - h
 	local stPriv = E.private and E.private.WT and E.private.WT.social
 		and E.private.WT.social.smartTab or {}
 	_, h = Widgets:Toggle(parent, "Enable Tab Switching", y,

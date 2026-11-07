@@ -24,27 +24,34 @@ local function BuildObjectiveTracker(parent, y, cat)
 	local _, h
 	local ot = E.private.WT.quest.objectiveTracker
 	_, h = Widgets:SectionHeader(parent, MH("Objective Tracker"), y); y = y - h
+	-- The sidebar used to carry this switch; the page owns it now that the
+	-- standalone panel is gone. The tracker defaults to off, so without this
+	-- row there would be no way left to turn it on.
+	local otDis = function() return not ot.enable end
+	_, h = Widgets:Toggle(parent, "Enable", y,
+		DBGet(ot, "enable"), DBSet(ot, "enable"),
+		"Toggle the objective tracker module."); y = y - h
 	_, h = Widgets:SectionHeader(parent, MH("Objective Tracker", "Progress"), y); y = y - h
 	_, h = Widgets:DualRow(parent, y,
 		{ type = "toggle", text = "No Dash",
-		  getValue = DBGet(ot, "noDash"), setValue = DBSet(ot, "noDash") },
+		  getValue = DBGet(ot, "noDash"), setValue = DBSet(ot, "noDash"), disabled = otDis },
 		{ type = "toggle", text = "Colorful Progress",
-		  getValue = DBGet(ot, "colorfulProgress"), setValue = DBSet(ot, "colorfulProgress") }
+		  getValue = DBGet(ot, "colorfulProgress"), setValue = DBSet(ot, "colorfulProgress"), disabled = otDis }
 	); y = y - h
 	_, h = Widgets:DualRow(parent, y,
 		{ type = "toggle", text = "Percentage",
-		  getValue = DBGet(ot, "percentage"), setValue = DBSet(ot, "percentage") },
+		  getValue = DBGet(ot, "percentage"), setValue = DBSet(ot, "percentage"), disabled = otDis },
 		{ type = "toggle", text = "Colorful Percentage",
-		  getValue = DBGet(ot, "colorfulPercentage"), setValue = DBSet(ot, "colorfulPercentage") }
+		  getValue = DBGet(ot, "colorfulPercentage"), setValue = DBSet(ot, "colorfulPercentage"), disabled = otDis }
 	); y = y - h
 	_, h = Widgets:SectionHeader(parent, MH("Objective Tracker", "Header"), y); y = y - h
 	y = FontSection(Widgets, parent, y, ot.header)
 	if ot.header then
 		_, h = Widgets:DualRow(parent, y,
 			{ type = "toggle", text = "Short Header",
-			  getValue = DBGet2(ot, "header", "shortHeader"), setValue = DBSet2(ot, "header", "shortHeader") },
+			  getValue = DBGet2(ot, "header", "shortHeader"), setValue = DBSet2(ot, "header", "shortHeader"), disabled = otDis },
 			{ type = "toggle", text = "Uppercase",
-			  getValue = DBGet2(ot, "header", "uppercase"), setValue = DBSet2(ot, "header", "uppercase") }
+			  getValue = DBGet2(ot, "header", "uppercase"), setValue = DBSet2(ot, "header", "uppercase"), disabled = otDis }
 		); y = y - h
 	end
 	return y

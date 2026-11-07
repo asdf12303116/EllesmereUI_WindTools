@@ -60,12 +60,18 @@ local function BuildProgression(parent, y, cat)
 	local _, h
 	local pg = E.private.WT.tooltips.progression
 	_, h = Widgets:SectionHeader(parent, MH("Progression"), y); y = y - h
+	-- The sidebar used to carry this switch; the page owns it now that the
+	-- standalone panel is gone.
+	local pgDis = function() return not pg.enable end
+	_, h = Widgets:Toggle(parent, "Enable", y,
+		DBGet(pg, "enable"), DBSet(pg, "enable"),
+		"Toggle the progression tooltip module."); y = y - h
 	_, h = Widgets:DualRow(parent, y,
 		{ type = "toggle", text = "Disable In Combat", tooltip = "Disable progression information in combat.",
-		  getValue = DBGet(pg, "disableInCombat"), setValue = DBSet(pg, "disableInCombat") },
+		  getValue = DBGet(pg, "disableInCombat"), setValue = DBSet(pg, "disableInCombat"), disabled = pgDis },
 		{ type = "dropdown", text = "Header Style",
 		  values = HEADER_STYLE_VALUES, order = HEADER_STYLE_ORDER,
-		  getValue = DBGet(pg, "header"), setValue = DBSet(pg, "header") }
+		  getValue = DBGet(pg, "header"), setValue = DBSet(pg, "header"), disabled = pgDis }
 	); y = y - h
 	if pg.raid then
 		_, h = Widgets:Toggle(parent, "Raid", y,

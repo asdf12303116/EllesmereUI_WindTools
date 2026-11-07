@@ -102,8 +102,10 @@ local function MarkSettingsChanged()
 	EllesmereUI._settingsChanged = true
 end
 
--- Safe wrappers for EllesmereUI panel methods that may not exist when the
--- standalone WindTools panel is used without EllesmereUI's own panel open.
+-- Content header plumbing. Plugin.lua replaces these to attach the page name to
+-- a builder raised during a plugin page build; this definition is what remains
+-- once that routing has already fired, or when the call arrives outside a build
+-- and the builder is meant for whatever page is on screen.
 addon.SetContentHeader = function(builder)
 	if EllesmereUI and EllesmereUI.SetContentHeader then
 		pcall(EllesmereUI.SetContentHeader, EllesmereUI, builder)
