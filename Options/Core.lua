@@ -343,7 +343,7 @@ function addon.OpenListDropdown(opts, anchorBtn)
 
 		if count == 0 then
 			emptyLabel:Show()
-			emptyLabel:SetText("List is empty")
+			emptyLabel:SetText(addon.L("List is empty"))
 			scrollFrame:SetHeight(EMPTY_H)
 			scrollChild:SetHeight(1)
 			menu:SetHeight(INPUT_H + 1 + EMPTY_H + 1)
@@ -393,7 +393,7 @@ function addon.OpenListDropdown(opts, anchorBtn)
 					if iName then
 						nameFS:SetText(iName .. " (" .. key .. ")")
 					else
-						nameFS:SetText("Loading... (" .. key .. ")")
+						nameFS:SetText(addon.L("Loading... (%s)"):format(key))
 						local tc = 0; local ticker
 						ticker = _G.C_Timer.NewTicker(0.2, function()
 							tc = tc + 1

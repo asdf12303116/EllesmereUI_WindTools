@@ -2,6 +2,7 @@ local addon = select(2, ...)
 local E = addon[3]
 
 addon.RegisterOptionBuilder("information", function(parent, y, cat)
+	local L = addon.L
 	local MH = function(mod, sub) return addon.MakeHeader(cat, mod, sub) end
 	local Widgets = EllesmereUI.Widgets
 	local _, h
@@ -10,7 +11,7 @@ addon.RegisterOptionBuilder("information", function(parent, y, cat)
 
 	local devVersion = addon.GetDevelopmentVersion and addon.GetDevelopmentVersion()
 	if devVersion then
-		_, h = Widgets:Button(parent, "Development Version: " .. tostring(devVersion), y, function() end); y = y - h
+		_, h = Widgets:Button(parent, L("Development Version: %s"):format(tostring(devVersion)), y, function() end); y = y - h
 	end
 
 	_, h = Widgets:SectionHeader(parent, MH("Help"), y); y = y - h

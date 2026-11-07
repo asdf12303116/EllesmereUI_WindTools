@@ -410,7 +410,7 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 		local barDis = function() return not db.enable or not SB().enable end
 		local lr0
 		lr0, h = Widgets:DualRow(parent, y,
-			{ type="toggle", text="Enable Bar " .. selectedBar,
+			{ type="toggle", text=addon.L("Enable Bar %d"):format(selectedBar),
 			  getValue=SGet("enable"), setValue=SSet("enable"),
 			  tooltip="Enable this specific bar.", disabled=function() return not db.enable end },
 			{ type="toggle", text="Bar Backdrop",

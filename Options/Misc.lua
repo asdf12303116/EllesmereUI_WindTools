@@ -6,6 +6,7 @@ local DBGet = addon.DBGet
 local DBSet = addon.DBSet
 local DBGet2 = addon.DBGet2
 local DBSet2 = addon.DBSet2
+local L = addon.L
 local SafeModuleCall = addon.SafeModuleCall
 local CVarGetBool = addon.CVarGetBool
 local CVarSetBool = addon.CVarSetBool
@@ -334,7 +335,7 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 
 			_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Left Panel"), y); y = y - h
 			for i = 1, 7 do
-				_, h = Widgets:Dropdown(parent, ("Button #%d"):format(i), y,
+				_, h = Widgets:Dropdown(parent, L("Button #%d"):format(i), y,
 					AVAILABLE_BUTTON_VALUES,
 					function() return GetSlotValue(gb.left, i) end,
 					function(v) gb.left = gb.left or {}; gb.left[i] = v; gbRefresh() end,
@@ -342,7 +343,7 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 			end
 			_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Right Panel"), y); y = y - h
 			for i = 1, 7 do
-				_, h = Widgets:Dropdown(parent, ("Button #%d"):format(i), y,
+				_, h = Widgets:Dropdown(parent, L("Button #%d"):format(i), y,
 					AVAILABLE_BUTTON_VALUES,
 					function() return GetSlotValue(gb.right, i) end,
 					function(v) gb.right = gb.right or {}; gb.right[i] = v; gbRefresh() end,
