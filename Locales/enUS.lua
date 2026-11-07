@@ -1002,6 +1002,7 @@ L["Left Click: Toggle"] = true
 L["Left Color"] = true
 L["Left Panel"] = true
 L["Legacy"] = true
+L["Legacy Challenges"] = true
 L["Legend"] = true
 L["Let you can view the group created by Simplified Chinese players."] = true
 L["Let your teammates know the progress of quests."] = true

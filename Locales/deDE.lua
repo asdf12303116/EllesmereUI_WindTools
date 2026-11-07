@@ -958,6 +958,7 @@ L["Left Click: Toggle"] = "Linksklick: Umschalten"
 L["Left Color"] = "Linke Farbe"
 L["Left Panel"] = "Linkes Panel"
 L["Legacy"] = true
+L["Legacy Challenges"] = "Erbe-Herausforderungen"
 L["Legend"] = "Legende"
 L["Let you can view the group created by Simplified Chinese players."] = "Zeigt die Gruppe an, die von vereinfachten chinesischen Spielern erstellt wurde."
 L["Let your teammates know the progress of quests."] = "Lass deine Teamkollegen den Fortschritt der Quests wissen."
