@@ -839,9 +839,32 @@ do
 		local fontOrder = {}
 		for k in pairs(fonts) do fontOrder[#fontOrder + 1] = k end
 		table.sort(fontOrder)
-		_, h = Widgets:Dropdown(parent, "Font", y, fonts, addon.DBGet(dbTable, "name"), addon.DBSet(dbTable, "name", after), fontOrder, disabled); y = y - h
-		_, h = Widgets:Dropdown(parent, "Outline", y, FOV, addon.DBGet(dbTable, "style"), addon.DBSet(dbTable, "style", after), FOO, disabled); y = y - h
-		_, h = Widgets:Slider(parent, "Size", y, 5, 60, 1, addon.DBGet(dbTable, "size"), addon.DBSet(dbTable, "size", after), nil, disabled); y = y - h
+		local fontSize, fontStyle, fontName = addon.DBGet(dbTable, "size"), addon.DBGet(dbTable, "style"), addon.DBGet(dbTable, "name")
+		local setSize, setStyle, setName = addon.DBSet(dbTable, "size", after), addon.DBSet(dbTable, "style", after), addon.DBSet(dbTable, "name", after)
+
+		-- The single-widget factories take the tooltip where a disabled flag would
+		-- go, so handing them a predicate puts a function in the tooltip: hovering
+		-- then calls it and feeds the boolean to SetText. A section that has to be
+		-- greyed out is therefore laid out as rows with an empty right half.
+		if disabled then
+			_, h = Widgets:DualRow(parent, y,
+				{ type = "dropdown", text = "Font", values = fonts, order = fontOrder,
+				  getValue = fontName, setValue = setName, disabled = disabled },
+				{ type = "spacer" }); y = y - h
+			_, h = Widgets:DualRow(parent, y,
+				{ type = "dropdown", text = "Outline", values = FOV, order = FOO,
+				  getValue = fontStyle, setValue = setStyle, disabled = disabled },
+				{ type = "spacer" }); y = y - h
+			_, h = Widgets:DualRow(parent, y,
+				{ type = "slider", text = "Size", min = 5, max = 60, step = 1,
+				  getValue = fontSize, setValue = setSize, disabled = disabled },
+				{ type = "spacer" }); y = y - h
+			return y
+		end
+
+		_, h = Widgets:Dropdown(parent, "Font", y, fonts, fontName, setName, fontOrder); y = y - h
+		_, h = Widgets:Dropdown(parent, "Outline", y, FOV, fontStyle, setStyle, FOO); y = y - h
+		_, h = Widgets:Slider(parent, "Size", y, 5, 60, 1, fontSize, setSize); y = y - h
 		return y
 	end
 end
