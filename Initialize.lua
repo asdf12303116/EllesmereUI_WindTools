@@ -247,38 +247,13 @@ local PAGE_GROUPS = {{
     -- every unitframe module group (Quick Focus, Absorb, Name Clip) inline.
     page = "Unit Frames",       categories = {"unitFrames"}
 }, {
-    page = "Skins",             categories = {"skins"}
-}, {
     page = "Advanced",          categories = {"advanced"}
 }}
 
-local PAGE_NAMES = {}
 local GROUP_BY_PAGE = {}
 for _, group in ipairs(PAGE_GROUPS) do
-    PAGE_NAMES[#PAGE_NAMES + 1] = group.page
     GROUP_BY_PAGE[group.page] = group
 end
-
--------------------------------------------------------------------------------
---  Sidebar layout
---  Mirrors EllesmereUI's sidebar structure: special buttons at the top,
---  then a search bar, then grouped page rows with accent-colored headers.
--------------------------------------------------------------------------------
-
--- Pages shown as full-width special buttons above the search bar.
-local SPECIAL_PAGES = { "Information", "Advanced" }
-
--- Grouped pages shown below the search bar. Each group has a label and an
--- ordered list of page names.
-local SIDEBAR_GROUPS = {
-    { label = "General",      pages = { "General", "Game Bar" } },
-    { label = "Items",        pages = { "Loot & Trade", "Display", "Inspect", "Item Level", "Merchant", "Extra Items Bar" } },
-    { label = "Combat",       pages = { "Combat" } },
-    { label = "Social",       pages = { "Chat Bar", "Smart Tab", "Announcement" } },
-    { label = "Maps",         pages = { "Super Tracker", "Minimap", "World Map", "Difficulty & Events" } },
-    { label = "Quest",        pages = { "Objective Tracker", "Automation", "Progress & Turn In", "Achievement" } },
-    { label = "UI Tweaks",    pages = { "Tooltip Info", "Progression", "Keystone & Group Info", "Tooltip Advanced", "Unit Frames", "Skins" } },
-}
 
 -- Build a single options page by invoking its registered category builders.
 -- pageName is passed as the 4th arg (subPage) so dispatch builders can
@@ -312,15 +287,11 @@ local function BuildPage(pageName, parent, yOffset)
     return math.abs(y) + 30
 end
 
--- Expose options metadata + builders to the rest of the addon (Panel.lua).
-addon.OptionPageGroups = PAGE_GROUPS
-addon.OptionPageNames = PAGE_NAMES
-addon.OptionGroupByPage = GROUP_BY_PAGE
-addon.SpecialPages = SPECIAL_PAGES
-addon.SidebarGroups = SIDEBAR_GROUPS
+-- Expose the page builder to the EllesmereUI plugin bridge in Options/Plugin.lua.
+-- The page list itself is mirrored there in module form, so no group metadata
+-- is exported: nothing outside the bridge walks it any more.
 addon.BuildOptionsPage = BuildPage
 addon.InitDB = InitDB
-addon.GetDB = function() return db end
 
 -------------------------------------------------------------------------------
 --  Blizzard Settings panel entry (Options -> AddOns)
@@ -345,8 +316,11 @@ local function RegisterBlizzardOptionsEntry()
             HideUIPanel(SettingsPanel)
         end
         C_Timer.After(0, function()
-            if W.ToggleOptions then
-                W:ToggleOptions()
+            -- The pages live inside the EllesmereUI panel. Registration can be
+            -- refused (a taken id, a reserved label), and there is no second
+            -- window to fall back to, so say so instead of doing nothing.
+            if not (addon.OpenOptionsPlugin and addon.OpenOptionsPlugin()) then
+                Print("options are not available: EllesmereUI refused the page registration.")
             end
         end)
     end)
@@ -363,6 +337,11 @@ W:RegisterEvent("PLAYER_LOGIN", function()
     InitDB()
     W.initialized = true
     SafeCall(W.InitializeModules, W)
+    -- The plugin API can be called at any point after EllesmereUI's chunk has
+    -- run, but the pages read the profile DB, so this waits until InitDB did.
+    if addon.RegisterOptionsPlugin then
+        SafeCall(addon.RegisterOptionsPlugin)
+    end
     RegisterBlizzardOptionsEntry()
     if db and db.profile.core and db.profile.core.loginMessage then
         Print("loaded for EllesmereUI.")
@@ -370,16 +349,11 @@ W:RegisterEvent("PLAYER_LOGIN", function()
 end)
 
 -------------------------------------------------------------------------------
---  AddOn Compartment + slash command entry
---  Both open the standalone WindTools options panel (W:ToggleOptions).
---  The panel is implemented in Options/Panel.lua and lazily built on first
---  open, so it is safe to reference here even before that file has loaded
---  its body (the function is looked up at call time via W:ToggleOptions).
+--  AddOn Compartment entry
+--  Opens the pages inside the EllesmereUI panel.
 -------------------------------------------------------------------------------
 _G.WindTools_OnAddonCompartmentClick = function()
-    if W.ToggleOptions then
-        W:ToggleOptions()
-    else
-        Print("options panel is not available.")
+    if not (addon.OpenOptionsPlugin and addon.OpenOptionsPlugin()) then
+        Print("options are not available: EllesmereUI refused the page registration.")
     end
 end
