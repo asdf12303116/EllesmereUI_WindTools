@@ -124,6 +124,20 @@ local function Print(text)
 	end
 end
 
+-- Some settings are read once while the addon loads (hook registration, CVar
+-- fixes), so no amount of refreshing applies them. Offer the reload from the
+-- click that made the change; a chat line nobody reads leaves the setting
+-- looking broken.
+function addon.PromptReload(message)
+	EllesmereUI:ShowConfirmPopup({
+		title = "Reload Required",
+		message = message or "This setting requires a UI reload to take effect.",
+		confirmText = "Reload Now",
+		cancelText = "Later",
+		reload = true,
+	})
+end
+
 local function CountTable(tbl, isArray)
 	local count = 0
 	if not tbl then return count end

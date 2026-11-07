@@ -161,7 +161,7 @@ local function BuildSmartTab(parent, y, cat)
 		function() return stPriv.allowUnsafeChatEditHooks ~= false end,
 		function(v)
 			stPriv.allowUnsafeChatEditHooks = v and true or false
-			print("|cFFFF6030[WindTools]|r SmartTab Tab-switching changed — /reload to apply.")
+			addon.PromptReload("Smart Tab registers its chat edit box hook at login, so the change applies after a UI reload.")
 		end,
 		"Cycle chat channels with Tab. WARNING: hooks Blizzard's chat edit box; in modern clients this can taint it and block sending chat. Disable if you get chat send failures."); y = y - h
 	_, h = Widgets:SectionHeader(parent, L("Channel"), y); y = y - h

@@ -76,10 +76,19 @@ local PageEnableConfig = {
     ["Chat Bar"] = {
         get = function() local t = Edb(); t = t and t.social and t.social.chatBar; return t and t.enable ~= false end,
         set = function(v) local t = Edb(); if t and t.social and t.social.chatBar then t.social.chatBar.enable = v end end,
+        refresh = function() addon.SafeModuleCall(addon[1].Modules.ChatBar, "ProfileUpdate") end,
     },
     ["Smart Tab"] = {
         get = function() local t = Edb(); t = t and t.social and t.social.smartTab; return t and t.enable ~= false end,
         set = function(v) local t = Edb(); if t and t.social and t.social.smartTab then t.social.smartTab.enable = v end end,
+        -- The hook is registered once at login, so switching the module off or
+        -- on only lands after a reload.
+        refresh = function() addon.PromptReload() end,
+    },
+    ["Game Bar"] = {
+        get = function() local t = Edb(); t = t and t.misc and t.misc.gameBar; return t and t.enable ~= false end,
+        set = function(v) local t = Edb(); if t and t.misc and t.misc.gameBar then t.misc.gameBar.enable = v end end,
+        refresh = function() addon.SafeModuleCall(addon[1].Modules.GameBar, "ProfileUpdate") end,
     },
     ["Super Tracker"] = {
         get = function() local t = Epdb(); t = t and t.maps and t.maps.superTracker; return t and t.enable ~= false end,

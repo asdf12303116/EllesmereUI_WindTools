@@ -368,66 +368,69 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 	do
 		local gb = db.gameBar
 		local gbDisabled = function() return not gb.enable end
+		-- Every Game Bar setting is read when the bar redraws, so pushing the
+		-- change straight into the module keeps the bar honest without a reload.
+		local gbRefresh = function() SafeModuleCall(W.Modules.GameBar, "ProfileUpdate") end
 		_, h = Widgets:Toggle(parent, "Enable", y,
-			DBGet(gb, "enable"), DBSet(gb, "enable"),
+			DBGet(gb, "enable"), DBSet(gb, "enable", gbRefresh),
 			"Toggle the game bar."); y = y - h
 
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "General"), y); y = y - h
 		_, h = Widgets:Toggle(parent, "Bar Backdrop", y,
-			DBGet(gb, "backdrop"), DBSet(gb, "backdrop"), "Show a backdrop of the bar."); y = y - h
+			DBGet(gb, "backdrop"), DBSet(gb, "backdrop", gbRefresh), "Show a backdrop of the bar."); y = y - h
 		_, h = Widgets:DualRow(parent, y,
 			{ type = "slider", text = "Backdrop Spacing", min = 1, max = 30, step = 1,
-			  getValue = DBGet(gb, "backdropSpacing"), setValue = DBSet(gb, "backdropSpacing"),
+			  getValue = DBGet(gb, "backdropSpacing"), setValue = DBSet(gb, "backdropSpacing", gbRefresh),
 			  tooltip = "The spacing between the backdrop and the buttons.", disabled = gbDisabled },
 			{ type = "slider", text = "Button Spacing", min = 1, max = 30, step = 1,
-			  getValue = DBGet(gb, "spacing"), setValue = DBSet(gb, "spacing"),
+			  getValue = DBGet(gb, "spacing"), setValue = DBSet(gb, "spacing", gbRefresh),
 			  tooltip = "The spacing between buttons.", disabled = gbDisabled }
 		); y = y - h
 		_, h = Widgets:DualRow(parent, y,
 			{ type = "slider", text = "Time Area Width", min = 1, max = 200, step = 1,
-			  getValue = DBGet(gb, "timeAreaWidth"), setValue = DBSet(gb, "timeAreaWidth"), disabled = gbDisabled },
+			  getValue = DBGet(gb, "timeAreaWidth"), setValue = DBSet(gb, "timeAreaWidth", gbRefresh), disabled = gbDisabled },
 			{ type = "slider", text = "Time Area Height", min = 1, max = 100, step = 1,
-			  getValue = DBGet(gb, "timeAreaHeight"), setValue = DBSet(gb, "timeAreaHeight"), disabled = gbDisabled }
+			  getValue = DBGet(gb, "timeAreaHeight"), setValue = DBSet(gb, "timeAreaHeight", gbRefresh), disabled = gbDisabled }
 		); y = y - h
 		_, h = Widgets:Slider(parent, "Button Size", y, 2, 80, 1,
-			DBGet(gb, "buttonSize"), DBSet(gb, "buttonSize"),
+			DBGet(gb, "buttonSize"), DBSet(gb, "buttonSize", gbRefresh),
 			"The size of the buttons."); y = y - h
 
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Display"), y); y = y - h
 		_, h = Widgets:DualRow(parent, y,
 			{ type = "toggle", text = "Mouse Over", tooltip = "Show the bar only when the mouse is hovered over the area.",
-			  getValue = DBGet(gb, "mouseOver"), setValue = DBSet(gb, "mouseOver"), disabled = gbDisabled },
+			  getValue = DBGet(gb, "mouseOver"), setValue = DBSet(gb, "mouseOver", gbRefresh), disabled = gbDisabled },
 			{ type = "toggle", text = "Notification", tooltip = "Add an indicator icon to buttons.",
-			  getValue = DBGet(gb, "notification"), setValue = DBSet(gb, "notification"), disabled = gbDisabled }
+			  getValue = DBGet(gb, "notification"), setValue = DBSet(gb, "notification", gbRefresh), disabled = gbDisabled }
 		); y = y - h
 		_, h = Widgets:DualRow(parent, y,
 			{ type = "slider", text = "Fade Time", min = 0, max = 3, step = 0.01,
-			  getValue = DBGet(gb, "fadeTime"), setValue = DBSet(gb, "fadeTime"),
+			  getValue = DBGet(gb, "fadeTime"), setValue = DBSet(gb, "fadeTime", gbRefresh),
 			  tooltip = "The animation speed.", disabled = gbDisabled },
 			{ type = "dropdown", text = "Tooltip Anchor",
 			  values = TOOLTIP_ANCHOR_VALUES, order = TOOLTIP_ANCHOR_ORDER,
-			  getValue = DBGet(gb, "tooltipsAnchor"), setValue = DBSet(gb, "tooltipsAnchor"), disabled = gbDisabled }
+			  getValue = DBGet(gb, "tooltipsAnchor"), setValue = DBSet(gb, "tooltipsAnchor", gbRefresh), disabled = gbDisabled }
 		); y = y - h
 
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Animation"), y); y = y - h
 		_, h = Widgets:Slider(parent, "Duration", y, 0, 3, 0.01,
-			DBGet2(gb, "animation", "duration"), DBSet2(gb, "animation", "duration"),
+			DBGet2(gb, "animation", "duration"), DBSet2(gb, "animation", "duration", gbRefresh),
 			"The duration of the animation in seconds."); y = y - h
 		_, h = Widgets:DualRow(parent, y,
 			{ type = "dropdown", text = "Ease",
 			  values = ANIMATION_EASE_VALUES, order = ANIMATION_EASE_ORDER,
 			  getValue = DBGet2(gb, "animation", "ease"),
-			  setValue = DBSet2(gb, "animation", "ease"),
+			  setValue = DBSet2(gb, "animation", "ease", gbRefresh),
 			  tooltip = "The easing function used for colorize the button." },
 			{ type = "toggle", text = "Invert Ease",
 			  getValue = DBGet2(gb, "animation", "easeInvert"),
-			  setValue = DBSet2(gb, "animation", "easeInvert") }
+			  setValue = DBSet2(gb, "animation", "easeInvert", gbRefresh) }
 		); y = y - h
 
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Normal Color"), y); y = y - h
 		_, h = Widgets:Dropdown(parent, "Mode", y,
 			COLOR_MODE_VALUES,
-			DBGet(gb, "normalColor"), DBSet(gb, "normalColor"),
+			DBGet(gb, "normalColor"), DBSet(gb, "normalColor", gbRefresh),
 			COLOR_MODE_ORDER); y = y - h
 		if gb.normalColor == "CUSTOM" then
 			_, h = Widgets:ColorPicker(parent, "Custom Color", y,
@@ -445,7 +448,7 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Hover Color"), y); y = y - h
 		_, h = Widgets:Dropdown(parent, "Mode", y,
 			COLOR_MODE_VALUES,
-			DBGet(gb, "hoverColor"), DBSet(gb, "hoverColor"),
+			DBGet(gb, "hoverColor"), DBSet(gb, "hoverColor", gbRefresh),
 			COLOR_MODE_ORDER); y = y - h
 		if gb.hoverColor == "CUSTOM" then
 			_, h = Widgets:ColorPicker(parent, "Custom Color", y,
@@ -465,21 +468,21 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 			local at = gb.additionalText
 			_, h = Widgets:DualRow(parent, y,
 				{ type = "toggle", text = "Enable",
-				  getValue = DBGet(at, "enable"), setValue = DBSet(at, "enable"), disabled = gbDisabled },
+				  getValue = DBGet(at, "enable"), setValue = DBSet(at, "enable", gbRefresh), disabled = gbDisabled },
 				{ type = "toggle", text = "Slow Mode", tooltip = "Update the additional text every 10 seconds rather than every 1 second such that the used memory will be lower.",
-				  getValue = DBGet(at, "slowMode"), setValue = DBSet(at, "slowMode"), disabled = gbDisabled }
+				  getValue = DBGet(at, "slowMode"), setValue = DBSet(at, "slowMode", gbRefresh), disabled = gbDisabled }
 			); y = y - h
 			_, h = Widgets:DualRow(parent, y,
 				{ type = "dropdown", text = "Anchor Point",
 				  values = ANCHOR_VALUES, order = ANCHOR_ORDER,
-				  getValue = DBGet(at, "anchor"), setValue = DBSet(at, "anchor"), disabled = gbDisabled },
+				  getValue = DBGet(at, "anchor"), setValue = DBSet(at, "anchor", gbRefresh), disabled = gbDisabled },
 				{ type = "spacer" }
 			); y = y - h
 			_, h = Widgets:DualRow(parent, y,
 				{ type = "slider", text = "X-Offset", min = -100, max = 100, step = 1,
-				  getValue = DBGet(at, "x"), setValue = DBSet(at, "x"), disabled = gbDisabled },
+				  getValue = DBGet(at, "x"), setValue = DBSet(at, "x", gbRefresh), disabled = gbDisabled },
 				{ type = "slider", text = "Y-Offset", min = -100, max = 100, step = 1,
-				  getValue = DBGet(at, "y"), setValue = DBSet(at, "y"), disabled = gbDisabled }
+				  getValue = DBGet(at, "y"), setValue = DBSet(at, "y", gbRefresh), disabled = gbDisabled }
 			); y = y - h
 			y = FontSection(Widgets, parent, y, at.font)
 		end
@@ -489,21 +492,21 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 			local tm = gb.time
 			_, h = Widgets:DualRow(parent, y,
 				{ type = "toggle", text = "Local Time",
-				  getValue = DBGet(tm, "localTime"), setValue = DBSet(tm, "localTime"), disabled = gbDisabled },
+				  getValue = DBGet(tm, "localTime"), setValue = DBSet(tm, "localTime", gbRefresh), disabled = gbDisabled },
 				{ type = "toggle", text = "24 Hours",
-				  getValue = DBGet(tm, "twentyFour"), setValue = DBSet(tm, "twentyFour"), disabled = gbDisabled }
+				  getValue = DBGet(tm, "twentyFour"), setValue = DBSet(tm, "twentyFour", gbRefresh), disabled = gbDisabled }
 			); y = y - h
 			_, h = Widgets:DualRow(parent, y,
 				{ type = "toggle", text = "Flash",
-				  getValue = DBGet(tm, "flash"), setValue = DBSet(tm, "flash"), disabled = gbDisabled },
+				  getValue = DBGet(tm, "flash"), setValue = DBSet(tm, "flash", gbRefresh), disabled = gbDisabled },
 				{ type = "toggle", text = "Avoid Reload in Combat", tooltip = "Disable the middle click UI reloading in combat.",
-				  getValue = DBGet(tm, "avoidReloadInCombat"), setValue = DBSet(tm, "avoidReloadInCombat"), disabled = gbDisabled }
+				  getValue = DBGet(tm, "avoidReloadInCombat"), setValue = DBSet(tm, "avoidReloadInCombat", gbRefresh), disabled = gbDisabled }
 			); y = y - h
 			_, h = Widgets:DualRow(parent, y,
 				{ type = "toggle", text = "Always Show System Info", tooltip = "The system information will be always shown rather than showing only being hovered.",
-				  getValue = DBGet(tm, "alwaysSystemInfo"), setValue = DBSet(tm, "alwaysSystemInfo"), disabled = gbDisabled },
+				  getValue = DBGet(tm, "alwaysSystemInfo"), setValue = DBSet(tm, "alwaysSystemInfo", gbRefresh), disabled = gbDisabled },
 				{ type = "slider", text = "Interval", min = 1, max = 60, step = 1,
-				  getValue = DBGet(tm, "interval"), setValue = DBSet(tm, "interval"),
+				  getValue = DBGet(tm, "interval"), setValue = DBSet(tm, "interval", gbRefresh),
 				  tooltip = "The interval of updating.", disabled = gbDisabled }
 			); y = y - h
 			y = FontSection(Widgets, parent, y, tm.font)
@@ -516,16 +519,16 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 			local fr = gb.friends
 			_, h = Widgets:DualRow(parent, y,
 				{ type = "toggle", text = "Show All Friends", tooltip = "Show all friends rather than only friends who are currently playing WoW.",
-				  getValue = DBGet(fr, "showAllFriends"), setValue = DBSet(fr, "showAllFriends"), disabled = gbDisabled },
+				  getValue = DBGet(fr, "showAllFriends"), setValue = DBSet(fr, "showAllFriends", gbRefresh), disabled = gbDisabled },
 				{ type = "toggle", text = "Count Sub Accounts", tooltip = "Count active WoW sub accounts rather than Battle.net Accounts.",
-				  getValue = DBGet(fr, "countSubAccounts"), setValue = DBSet(fr, "countSubAccounts"), disabled = gbDisabled }
+				  getValue = DBGet(fr, "countSubAccounts"), setValue = DBSet(fr, "countSubAccounts", gbRefresh), disabled = gbDisabled }
 			); y = y - h
 		end
 
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Group Finder"), y); y = y - h
 		_, h = Widgets:Toggle(parent, "Prefer NetEase Meeting Stone", y,
 			DBGet2(gb, "groupFinder", "preferNetEaseMeetingStone"),
-			DBSet2(gb, "groupFinder", "preferNetEaseMeetingStone"),
+			DBSet2(gb, "groupFinder", "preferNetEaseMeetingStone", gbRefresh),
 			"If Meeting Stone is installed, left click the Group Finder button to open NetEase Meeting Stone instead of the Blizzard one."); y = y - h
 
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Left Panel"), y); y = y - h
