@@ -5,6 +5,8 @@ manual-changelog:
   markup-type: markdown
 
 ignore:
+  - AGENTS.md
+  - package.ps1
   - .gcignore
   - .gitattributes
   - .github/*
