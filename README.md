@@ -36,7 +36,8 @@
 | Unit Frames (Quick Focus) | ✅ Done | Modifier-click focus with optional target marking |
 | Unit Frames (Absorb, Role Icon, Tags) | ❌ Not ported | |
 | Skins | ❌ Not ported | |
-| Misc (Move Frames, Game Bar, Mute, Automation, etc.) | ❌ Not ported | |
+| Misc (Game Bar) | ✅ Done | System bar: clock and system info, 14 configurable buttons, three hearthstone keys, combat-lockdown safe; live and forever clients |
+| Misc (Move Frames, Mute, Automation, etc.) | ❌ Not ported | |
 
 ## ❤️ Credits
 

@@ -60,6 +60,12 @@ G.misc = {
 		movies = {},
 	},
 	lfgList = {},
+	gameBar = {
+		-- Mover position saved at account level so the bar layout is shared
+		-- across characters. Populated by EllesmereUI Unlock Mode via the
+		-- RegisterUnlockElements API. Nil = use the default anchor (top center).
+		position = nil,
+	},
 }
 
 G.maps = {

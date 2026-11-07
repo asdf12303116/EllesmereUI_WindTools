@@ -128,6 +128,9 @@ local PAGE_MODULES = {
     ["Extra Items Bar"] = "ExtraItemsBar",
     ["Chat Bar"]         = "ChatBar",
     ["Smart Tab"]        = "SmartTab",
+    -- The Game Bar has its own page even though its options live in the Misc
+    -- options file; it is available as soon as the GameBar module is loaded.
+    ["Game Bar"]         = "GameBar",
     -- Category pages (original WindTools layout): available when any of the
     -- category's modules is ported. Enable/disable is handled by each
     -- module's in-page Enable toggle, not by a sidebar power icon.

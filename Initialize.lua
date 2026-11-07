@@ -191,6 +191,11 @@ local PAGE_GROUPS = {{
 }, {
     page = "General",           categories = {"misc"}
 }, {
+    -- Game Bar owns a page of its own even though its options live in the Misc
+    -- options file: the rest of that category is still unported, so a shared
+    -- page could never be enabled without exposing a dozen dead toggles.
+    page = "Game Bar",          categories = {"misc"}
+}, {
     page = "Loot & Trade",      categories = {"item"}
 }, {
     page = "Display",           categories = {"item"}
@@ -266,7 +271,7 @@ local SPECIAL_PAGES = { "Information", "Advanced" }
 -- Grouped pages shown below the search bar. Each group has a label and an
 -- ordered list of page names.
 local SIDEBAR_GROUPS = {
-    { label = "General",      pages = { "General" } },
+    { label = "General",      pages = { "General", "Game Bar" } },
     { label = "Items",        pages = { "Loot & Trade", "Display", "Inspect", "Item Level", "Merchant", "Extra Items Bar" } },
     { label = "Combat",       pages = { "Combat" } },
     { label = "Social",       pages = { "Chat Bar", "Smart Tab", "Announcement" } },

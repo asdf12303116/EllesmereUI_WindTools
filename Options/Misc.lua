@@ -84,6 +84,7 @@ local LFG_ICON_PACK_VALUES = {
 }
 
 local AVAILABLE_BUTTON_VALUES = {
+	NONE = "None",
 	CHARACTER = "Character",
 	SPELLBOOK = "Spellbook",
 	TALENTS = "Talents",
@@ -95,16 +96,21 @@ local AVAILABLE_BUTTON_VALUES = {
 	COLLECTIONS = "Collections",
 	TOY_BOX = "Toy Box",
 	PET_JOURNAL = "Pet Journal",
+	MISSION_REPORTS = "Mission Reports",
+	PROFESSION = "Profession",
 	BAGS = "Bags",
 	SCREENSHOT = "Screenshot",
 	HOME = "Home",
 	HEARTHSTONE = "Hearthstone",
 	BLIZZARD_SHOP = "Blizzard Shop",
+	GAMEMENU = "Game Menu",
+	VOLUME = "Volume",
 }
 local AVAILABLE_BUTTON_ORDER = {
-	"CHARACTER", "SPELLBOOK", "TALENTS", "FRIENDS", "GUILD", "GROUP_FINDER",
+	"NONE", "CHARACTER", "SPELLBOOK", "TALENTS", "FRIENDS", "GUILD", "GROUP_FINDER",
 	"ACHIEVEMENTS", "ENCOUNTER_JOURNAL", "COLLECTIONS", "TOY_BOX", "PET_JOURNAL",
-	"BAGS", "SCREENSHOT", "HOME", "HEARTHSTONE", "BLIZZARD_SHOP",
+	"MISSION_REPORTS", "PROFESSION", "BAGS", "SCREENSHOT", "HOME", "HEARTHSTONE",
+	"BLIZZARD_SHOP", "GAMEMENU", "VOLUME",
 }
 
 local TOOLTIP_ANCHOR_VALUES = { ANCHOR_TOP = "TOP", ANCHOR_BOTTOM = "BOTTOM" }
@@ -115,20 +121,28 @@ local function FontSection(Widgets, parent, y, dbTable, prefix)
 	local fonts = GetLSMFonts()
 	_, h = Widgets:Dropdown(parent, "Font", y, fonts, DBGet(dbTable, "name"), DBSet(dbTable, "name")); y = y - h
 	_, h = Widgets:Dropdown(parent, "Outline", y,
-		FONT_OUTLINE_VALUES, FONT_OUTLINE_ORDER,
-		DBGet(dbTable, "style"), DBSet(dbTable, "style")); y = y - h
+		FONT_OUTLINE_VALUES,
+		DBGet(dbTable, "style"), DBSet(dbTable, "style"),
+		FONT_OUTLINE_ORDER); y = y - h
 	_, h = Widgets:Slider(parent, "Size", y, 5, 60, 1,
 		DBGet(dbTable, "size"), DBSet(dbTable, "size")); y = y - h
 	return y
 end
 
-addon.RegisterOptionBuilder("misc", function(parent, y, cat)
+addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 	local Widgets = EllesmereUI.Widgets
 	local _, h
 	local db = E.db.WT.misc
 	local pdb = E.private.WT.misc
 	local MH = function(mod, sub) return addon.MakeHeader(cat, mod, sub) end
 
+	-- Game Bar has its own page while the rest of this category belongs to
+	-- modules that are still unported, so each half is drawn only for the page
+	-- that owns it. Otherwise the Game Bar page would inherit a dozen dead
+	-- toggles, and the General page would repeat the Game Bar block.
+	local gameBarOnly = subPage == "Game Bar"
+
+	if not gameBarOnly then
 	_, h = Widgets:SectionHeader(parent, MH("General"), y); y = y - h
 
 	_, h = Widgets:DualRow(parent, y,
@@ -271,8 +285,9 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat)
 			CVarGetBool("rawMouseEnable"), CVarSetBool("rawMouseEnable"),
 			"It will fix the problem if your cursor has abnormal movement."); y = y - h
 		_, h = Widgets:Dropdown(parent, "Acceleration Type", y,
-			MOUSE_ACCEL_VALUES, MOUSE_ACCEL_ORDER,
-			CVarGetStr("mouseAcceleration"), CVarSetStr("mouseAcceleration")); y = y - h
+			MOUSE_ACCEL_VALUES,
+			CVarGetStr("mouseAcceleration"), CVarSetStr("mouseAcceleration"),
+			MOUSE_ACCEL_ORDER); y = y - h
 		_, h = Widgets:Toggle(parent, "Action on keydown", y,
 			CVarGetBool("ActionButtonUseKeyDown"), CVarSetBool("ActionButtonUseKeyDown"),
 			"Trigger the action when pressing the key down rather than releasing it."); y = y - h
@@ -346,6 +361,9 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat)
 		end
 	end
 
+	end
+
+	if gameBarOnly then
 	_, h = Widgets:SectionHeader(parent, MH("Game Bar"), y); y = y - h
 	do
 		local gb = db.gameBar
@@ -408,8 +426,9 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat)
 
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Normal Color"), y); y = y - h
 		_, h = Widgets:Dropdown(parent, "Mode", y,
-			COLOR_MODE_VALUES, COLOR_MODE_ORDER,
-			DBGet(gb, "normalColor"), DBSet(gb, "normalColor")); y = y - h
+			COLOR_MODE_VALUES,
+			DBGet(gb, "normalColor"), DBSet(gb, "normalColor"),
+			COLOR_MODE_ORDER); y = y - h
 		if gb.normalColor == "CUSTOM" then
 			_, h = Widgets:ColorPicker(parent, "Custom Color", y,
 				function()
@@ -425,8 +444,9 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat)
 
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Hover Color"), y); y = y - h
 		_, h = Widgets:Dropdown(parent, "Mode", y,
-			COLOR_MODE_VALUES, COLOR_MODE_ORDER,
-			DBGet(gb, "hoverColor"), DBSet(gb, "hoverColor")); y = y - h
+			COLOR_MODE_VALUES,
+			DBGet(gb, "hoverColor"), DBSet(gb, "hoverColor"),
+			COLOR_MODE_ORDER); y = y - h
 		if gb.hoverColor == "CUSTOM" then
 			_, h = Widgets:ColorPicker(parent, "Custom Color", y,
 				function()
@@ -511,21 +531,24 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat)
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Left Panel"), y); y = y - h
 		for i = 1, 7 do
 			_, h = Widgets:Dropdown(parent, ("Button #%d"):format(i), y,
-				AVAILABLE_BUTTON_VALUES, AVAILABLE_BUTTON_ORDER,
+				AVAILABLE_BUTTON_VALUES,
 				function() return gb.left and gb.left[i] end,
 				function(v) gb.left = gb.left or {}; gb.left[i] = v end,
-				nil, nil); y = y - h
+				AVAILABLE_BUTTON_ORDER); y = y - h
 		end
 		_, h = Widgets:SectionHeader(parent, MH("Game Bar", "Right Panel"), y); y = y - h
 		for i = 1, 7 do
 			_, h = Widgets:Dropdown(parent, ("Button #%d"):format(i), y,
-				AVAILABLE_BUTTON_VALUES, AVAILABLE_BUTTON_ORDER,
+				AVAILABLE_BUTTON_VALUES,
 				function() return gb.right and gb.right[i] end,
 				function(v) gb.right = gb.right or {}; gb.right[i] = v end,
-				nil, nil); y = y - h
+				AVAILABLE_BUTTON_ORDER); y = y - h
 		end
 	end
 
+	end
+
+	if not gameBarOnly then
 	_, h = Widgets:SectionHeader(parent, MH("LFG List"), y); y = y - h
 	do
 		local ll = pdb.lfgList
@@ -549,8 +572,9 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat)
 			); y = y - h
 			if ic.reskin then
 				_, h = Widgets:Dropdown(parent, "Style", y,
-					LFG_ICON_PACK_VALUES, LFG_ICON_PACK_ORDER,
+					LFG_ICON_PACK_VALUES,
 					DBGet(ic, "pack"), DBSet(ic, "pack"),
+					LFG_ICON_PACK_ORDER,
 					"Change the icons that indicate the role."); y = y - h
 			end
 			_, h = Widgets:DualRow(parent, y,
@@ -572,7 +596,7 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat)
 				DBGet(ln, "enable"), DBSet(ln, "enable"),
 				"Add a line in class color."); y = y - h
 			_, h = Widgets:Dropdown(parent, "Texture", y,
-				GetLSMStatusbars(), nil,
+				GetLSMStatusbars(),
 				DBGet(ln, "tex"), DBSet(ln, "tex")); y = y - h
 			_, h = Widgets:DualRow(parent, y,
 				{ type = "slider", text = "Width", min = 1, max = 20, step = 1,
@@ -683,6 +707,8 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat)
 			disabled = kaDis,
 			after = updateKeybindText,
 		}); y = y - h
+	end
+
 	end
 
 	return y

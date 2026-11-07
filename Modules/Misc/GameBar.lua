@@ -1,9 +1,12 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local S = W.Modules.Skins ---@type Skins
-local GB = W:NewModule("GameBar", "AceEvent-3.0", "AceHook-3.0")
-local DT = E:GetModule("DataTexts")
+local GB = W:NewModule("GameBar")
 local async = W.Utilities.Async
 local C = W.Utilities.Color
+
+local EUI = _G.EllesmereUI
+local PP = EUI and EUI.PP
+
+local NORM_TEX = "Interface\\Buttons\\WHITE8x8"
 
 local _G = _G
 local collectgarbage = collectgarbage
@@ -29,7 +32,6 @@ local BNGetNumFriends = BNGetNumFriends
 local CloseAllWindows = CloseAllWindows
 local CloseMenus = CloseMenus
 local CreateFrame = CreateFrame
-local GenerateClosure = GenerateClosure
 local GetAchievementCriteriaInfo = GetAchievementCriteriaInfo
 local GetBindLocation = GetBindLocation
 local GetGameTime = GetGameTime
@@ -52,6 +54,21 @@ local ToggleCharacter = ToggleCharacter
 local ToggleTimeManager = ToggleTimeManager
 local UnregisterStateDriver = UnregisterStateDriver
 
+local C_AddOns = _G.C_AddOns or {}
+local C_BattleNet = _G.C_BattleNet or {}
+local C_CVar = _G.C_CVar or {}
+local C_Covenants = _G.C_Covenants or {}
+local C_FriendList = _G.C_FriendList or {}
+local C_Garrison = _G.C_Garrison or {}
+local C_Housing = _G.C_Housing or {}
+local C_Item = _G.C_Item or {}
+local C_Spell = _G.C_Spell or {}
+local C_SpellBook = _G.C_SpellBook or {}
+local C_ToyBox = _G.C_ToyBox or {}
+local C_UI = _G.C_UI or {}
+
+local C_AddOns_GetAddOnInfo = C_AddOns.GetAddOnInfo
+local C_AddOns_GetNumAddOns = C_AddOns.GetNumAddOns
 local C_AddOns_IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 local C_BattleNet_GetFriendAccountInfo = C_BattleNet.GetFriendAccountInfo
 local C_BattleNet_GetFriendGameAccountInfo = C_BattleNet.GetFriendGameAccountInfo
@@ -67,14 +84,34 @@ local C_Item_GetItemCooldown = C_Item.GetItemCooldown
 local C_Item_GetItemCount = C_Item.GetItemCount
 local C_SpellBook_IsSpellKnown = C_SpellBook.IsSpellKnown
 local C_Spell_GetSpellCooldown = C_Spell.GetSpellCooldown
+local C_Timer = _G.C_Timer or {}
+local C_Timer_After = C_Timer.After
 local C_Timer_NewTicker = C_Timer.NewTicker
 local C_ToyBox_IsToyUsable = C_ToyBox.IsToyUsable
 local C_UI_Reload = C_UI.Reload
 
-local Enum_CovenantType = Enum.CovenantType
-local FollowerType_8_0 = Enum.GarrisonFollowerType.FollowerType_8_0_GarrisonFollower
-local FollowerType_9_0 = Enum.GarrisonFollowerType.FollowerType_9_0_GarrisonFollower
-local RED_FONT_COLOR = RED_FONT_COLOR
+local Enum_CovenantType = _G.Enum and _G.Enum.CovenantType
+local GarrisonFollowerType = _G.Enum and _G.Enum.GarrisonFollowerType
+local FollowerType_8_0 = GarrisonFollowerType and GarrisonFollowerType.FollowerType_8_0_GarrisonFollower
+local FollowerType_9_0 = GarrisonFollowerType and GarrisonFollowerType.FollowerType_9_0_GarrisonFollower
+local RED_FONT_COLOR = _G.RED_FONT_COLOR
+	or {
+		r = 1,
+		g = 0.1,
+		b = 0.1,
+		a = 1,
+		GetRGBA = function(self)
+			return self.r, self.g, self.b, self.a
+		end,
+	}
+
+local GetAddOnMemoryUsage = _G.GetAddOnMemoryUsage
+local GetFramerate = _G.GetFramerate
+local GetNetStats = _G.GetNetStats
+local UpdateAddOnMemoryUsage = _G.UpdateAddOnMemoryUsage
+
+local GameTooltip = _G.GameTooltip
+local UIParent = _G.UIParent
 
 local NUM_PANEL_BUTTONS = 7
 local ICON_STRING = "|T%s:16:18:0:0:64:64:4:60:7:57"
@@ -105,8 +142,9 @@ local HEARTSTONE_SIDE_SETTINGS = {
 	},
 }
 
-local friendOnline = gsub(_G.ERR_FRIEND_ONLINE_SS, "\124Hplayer:%%s\124h%[%%s%]\124h", "")
-local friendOffline = gsub(_G.ERR_FRIEND_OFFLINE_S, "%%s", "")
+local friendOnline = _G.ERR_FRIEND_ONLINE_SS
+	and gsub(_G.ERR_FRIEND_ONLINE_SS, "\124Hplayer:%%s\124h%[%%s%]\124h", "")
+local friendOffline = _G.ERR_FRIEND_OFFLINE_S and gsub(_G.ERR_FRIEND_OFFLINE_S, "%%s", "")
 
 GB.AnimationManager = { frame = nil, groups = nil }
 GB.playerHouseList = nil
@@ -362,15 +400,15 @@ local function IsHearthstoneActionUsable(actionData)
 	end
 
 	if actionData.actionType == "spell" then
-		return C_SpellBook_IsSpellKnown(actionData.actionID)
+		return C_SpellBook_IsSpellKnown and C_SpellBook_IsSpellKnown(actionData.actionID) or false
 	elseif actionData.actionType == "random" then
 		return availableHearthstones and #availableHearthstones > 0
 	elseif actionData.actionType == "item" then
-		local usesCount = C_Item_GetItemCount(actionData.actionID, nil, true)
+		local usesCount = C_Item_GetItemCount and C_Item_GetItemCount(actionData.actionID, nil, true)
 		if usesCount and usesCount > 0 then
 			return true
 		end
-		return PlayerHasToy(actionData.actionID)
+		return PlayerHasToy and PlayerHasToy(actionData.actionID) or false
 	end
 
 	return false
@@ -419,12 +457,13 @@ local function AddDoubleLineForItem(actionData, prefix, button, side)
 
 	local startTime, duration = 0, 0
 	if actionData.actionType == "spell" then
-		local cooldownInfo = C_Spell_GetSpellCooldown(actionData.actionID)
+		local cooldownInfo = C_Spell_GetSpellCooldown and C_Spell_GetSpellCooldown(actionData.actionID)
 		startTime = cooldownInfo and cooldownInfo.startTime or 0
 		duration = cooldownInfo and cooldownInfo.duration or 0
-	else
+	elseif C_Item_GetItemCooldown then
 		startTime, duration = C_Item_GetItemCooldown(actionData.actionID)
 	end
+	startTime, duration = startTime or 0, duration or 0
 
 	local cooldownTime = startTime + duration - GetTime()
 	local canUse = cooldownTime <= 0
@@ -436,9 +475,9 @@ local function AddDoubleLineForItem(actionData, prefix, button, side)
 	end
 
 	local name = actionData.name
-	if actionData.actionType == "item" and actionData.actionID == 180817 then
+	if actionData.actionType == "item" and actionData.actionID == 180817 and C_Item_GetItemCount then
 		local charge = C_Item_GetItemCount(actionData.actionID, nil, true)
-		name = name .. format(" (%d)", charge)
+		name = name .. format(" (%d)", charge or 0)
 	end
 
 	if actionData.actionType == "random" then
@@ -461,7 +500,7 @@ local function AddDoubleLineForItem(actionData, prefix, button, side)
 		end
 	end
 
-	DT.tooltip:AddDoubleLine(
+	GameTooltip:AddDoubleLine(
 		prefix .. icon .. " " .. name,
 		canUse and L["Ready"] or cooldownTimeString,
 		1,
@@ -473,54 +512,127 @@ local function AddDoubleLineForItem(actionData, prefix, button, side)
 	)
 end
 
--- Fake DataText for no errors throwed from ElvUI
-local VirtualDTEvent = {
-	Friends = nil,
-	Guild = "GUILD_ROSTER_UPDATE",
-	Time = "UPDATE_INSTANCE_INFO",
-}
+-- System information (FPS / latency / memory) previously delegated to ElvUI's
+-- "System" data text. Implemented locally so the module has no DataTexts
+-- dependency; UpdateAddOnMemoryUsage() is a known spike, so the addon memory
+-- scan is amortised to once every 30 seconds and skipped during combat.
+local SYS_MEM_SCAN_INTERVAL = 30
+local sysMemTable = {}
+local sysLastMemScanTime = 0
 
-local VirtualDT = {
-	Friends = {
-		name = "Friends",
-		text = {
-			SetFormattedText = E.noop,
-		},
-	},
-	System = {
-		name = "System",
-	},
-	Time = {
-		name = "Time",
-		text = {
-			SetFormattedText = E.noop,
-		},
-	},
-	Guild = {
-		name = "Guild",
-		text = {
-			SetFormattedText = E.noop,
-			SetText = E.noop,
-		},
-		GetScript = function()
-			return E.noop
-		end,
-		IsMouseOver = function()
-			return false
-		end,
-	},
-}
+local function sysMemSort(a, b)
+	return a.mem > b.mem
+end
+
+local function UpdateSystemMemoryCache(force)
+	local now = GetTime()
+	if not force and (now - sysLastMemScanTime) < SYS_MEM_SCAN_INTERVAL then
+		return
+	end
+	if InCombatLockdown() and not force then
+		return
+	end
+	if not UpdateAddOnMemoryUsage or not GetAddOnMemoryUsage or not C_AddOns_GetNumAddOns then
+		return
+	end
+
+	sysLastMemScanTime = now
+	UpdateAddOnMemoryUsage()
+
+	local count = 0
+	for i = 1, C_AddOns_GetNumAddOns() do
+		local name = C_AddOns_GetAddOnInfo and C_AddOns_GetAddOnInfo(i)
+		local mem = GetAddOnMemoryUsage(i) or 0
+		if name and mem > 0 then
+			count = count + 1
+			sysMemTable[count] = sysMemTable[count] or {}
+			sysMemTable[count].name = name
+			sysMemTable[count].mem = mem
+		end
+	end
+	for i = count + 1, #sysMemTable do
+		sysMemTable[i] = nil
+	end
+	table.sort(sysMemTable, sysMemSort)
+end
+
+local function FormatMemory(mem)
+	if mem > 1024 then
+		return format("%.2f MB", mem / 1024)
+	end
+	return format("%.0f KB", mem)
+end
+
+function GB:GetSystemInfoText()
+	local fps = GetFramerate and floor(GetFramerate()) or 0
+	local home, world = 0, 0
+	if GetNetStats then
+		-- Only the 3rd and 4th returns are latency; the first two are KiB/s.
+		home, world = select(3, GetNetStats())
+	end
+	home, world = floor(home or 0), floor(world or 0)
+	return format("%d FPS  %d/%d MS", fps, home, world)
+end
+
+function GB:BuildSystemInfoTooltip()
+	GameTooltip:ClearLines()
+
+	local fps = GetFramerate and floor(GetFramerate()) or 0
+	local inKB, outKB, home, world = 0, 0, 0, 0
+	if GetNetStats then
+		inKB, outKB, home, world = GetNetStats()
+	end
+	inKB, outKB = inKB or 0, outKB or 0
+	home, world = floor(home or 0), floor(world or 0)
+
+	GameTooltip:SetText(L["Game Bar"], 1, 1, 1)
+	GameTooltip:AddDoubleLine("FPS", tostring(fps), 0.6, 0.6, 0.6, 1, 1, 1)
+	GameTooltip:AddDoubleLine("Home", tostring(home) .. " MS", 0.6, 0.6, 0.6, 1, 1, 1)
+	GameTooltip:AddDoubleLine("World", tostring(world) .. " MS", 0.6, 0.6, 0.6, 1, 1, 1)
+	GameTooltip:AddDoubleLine("Download", format("%.1f KB/s", inKB), 0.6, 0.6, 0.6, 1, 1, 1)
+	GameTooltip:AddDoubleLine("Upload", format("%.1f KB/s", outKB), 0.6, 0.6, 0.6, 1, 1, 1)
+
+	UpdateSystemMemoryCache()
+	if #sysMemTable > 0 then
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine("Memory", 1, 1, 1)
+		for i = 1, min(10, #sysMemTable) do
+			GameTooltip:AddDoubleLine(sysMemTable[i].name, FormatMemory(sysMemTable[i].mem), 1, 1, 1, 0.6, 0.6, 0.6)
+		end
+	end
+end
 
 local sharedCache = {
 	friends = {},
 }
+
+-- The CVar holds the volume as a string, so stepping it through arithmetic and
+-- writing the raw float back would store values like "0.30000001192". Round to
+-- two decimals before writing and read every value back through GetMasterVolume.
+function GB:GetMasterVolume()
+	if not C_CVar_GetCVar then
+		return 0
+	end
+	return tonumber(C_CVar_GetCVar("Sound_MasterVolume")) or 0
+end
+
+function GB:StepMasterVolume(delta)
+	if not C_CVar_SetCVar then
+		return
+	end
+	local volume = self:GetMasterVolume() + delta
+	volume = max(min(volume, 1), 0)
+	C_CVar_SetCVar("Sound_MasterVolume", format("%.2f", volume))
+end
 
 local ButtonTypes = {
 	ACHIEVEMENTS = {
 		name = L["Achievements"],
 		icon = W.Media.Icons.barAchievements,
 		macro = {
-			LeftButton = _G.SLASH_ACHIEVEMENTUI1,
+			-- SLASH_ACHIEVEMENTUI1 is the localized slash command; the micro
+			-- button is singular (AchievementMicroButton) on both live and forever.
+			LeftButton = _G.SLASH_ACHIEVEMENTUI1 or "/click AchievementMicroButton",
 		},
 		tooltips = {
 			L["Achievements"],
@@ -531,17 +643,24 @@ local ButtonTypes = {
 		icon = W.Media.Icons.barBags,
 		click = {
 			LeftButton = function()
-				_G.ToggleAllBags()
+				local toggle = _G.ToggleAllBags or (_G.C_Container and _G.C_Container.ToggleBagsWindow)
+				if toggle then
+					toggle()
+				end
 			end,
 		},
-		tooltips = "Bags",
+		tooltips = {
+			L["Bags"],
+		},
 	},
 	BLIZZARD_SHOP = {
 		name = L["Blizzard Shop"],
 		icon = W.Media.Icons.barBlizzardShop,
 		click = {
 			LeftButton = function()
-				_G.StoreMicroButton:Click()
+				if _G.StoreMicroButton then
+					_G.StoreMicroButton:Click()
+				end
 			end,
 		},
 		tooltips = {
@@ -597,17 +716,22 @@ local ButtonTypes = {
 			LeftButton = "/cleartarget\n/friends",
 		},
 		additionalText = function()
+			if not BNGetNumFriends or not C_BattleNet_GetFriendAccountInfo then
+				return ""
+			end
+
 			local numBNOnline, numWoWOnline = 0, 0
 
 			for i = 1, BNGetNumFriends() do
 				local accountInfo = C_BattleNet_GetFriendAccountInfo(i)
 				if accountInfo and accountInfo.gameAccountInfo and accountInfo.gameAccountInfo.isOnline then
-					local numGameAccounts = C_BattleNet_GetFriendNumGameAccounts(i)
+					local numGameAccounts = C_BattleNet_GetFriendNumGameAccounts
+						and C_BattleNet_GetFriendNumGameAccounts(i)
 					numBNOnline = numBNOnline + 1
-					if numGameAccounts and numGameAccounts > 0 then
+					if numGameAccounts and numGameAccounts > 0 and C_BattleNet_GetFriendGameAccountInfo then
 						for j = 1, numGameAccounts do
-							local gameAccountInfo = C_BattleNet_GetFriendGameAccountInfo(i, j) --[[@as BNetGameAccountInfo]]
-							if gameAccountInfo.clientProgram and gameAccountInfo.clientProgram == "WoW" then
+							local gameAccountInfo = C_BattleNet_GetFriendGameAccountInfo(i, j)
+							if gameAccountInfo and gameAccountInfo.clientProgram == "WoW" then
 								numWoWOnline = numWoWOnline + 1
 							end
 						end
@@ -619,7 +743,7 @@ local ButtonTypes = {
 
 			local result
 			if GB and GB.db and GB.db.friends and GB.db.friends.showAllFriends then
-				local friendsOnline = C_FriendList_GetNumFriends() or 0
+				local friendsOnline = C_FriendList_GetNumFriends and C_FriendList_GetNumFriends() or 0
 				result = friendsOnline + numBNOnline
 			else
 				result = numWoWOnline
@@ -627,7 +751,11 @@ local ButtonTypes = {
 
 			return result > 0 and result or ""
 		end,
-		tooltips = "Friends",
+		tooltips = {
+			L["Friends"],
+			"\n",
+			LEFT_BUTTON_ICON .. " " .. L["Toggle Friend List"],
+		},
 		events = {
 			"BN_FRIEND_ACCOUNT_ONLINE",
 			"BN_FRIEND_ACCOUNT_OFFLINE",
@@ -637,9 +765,12 @@ local ButtonTypes = {
 		},
 		eventHandler = function(button, event, message)
 			if event == "CHAT_MSG_SYSTEM" then
-				if
-					E:IsSecretValue(message) or not (strfind(message, friendOnline) or strfind(message, friendOffline))
-				then
+				-- ERR_FRIEND_* globals may be missing on a client, and a secret
+				-- message must not be indexed, so both are checked before strfind.
+				if E:IsSecretValue(message) or not friendOnline or not friendOffline then
+					return
+				end
+				if not (strfind(message, friendOnline) or strfind(message, friendOffline)) then
 					return
 				end
 			end
@@ -660,14 +791,15 @@ local ButtonTypes = {
 			LeftButton = function()
 				if not InCombatLockdown() then
 					-- Open game menu | From ElvUI
-					if not _G.GameMenuFrame:IsShown() then
+					local menu = _G.GameMenuFrame
+					if menu and not menu:IsShown() then
 						CloseMenus()
 						CloseAllWindows()
 						PlaySound(850) --IG_MAINMENU_OPEN
-						ShowUIPanel(_G.GameMenuFrame)
-					else
+						ShowUIPanel(menu)
+					elseif menu then
 						PlaySound(854) --IG_MAINMENU_QUIT
-						HideUIPanel(_G.GameMenuFrame)
+						HideUIPanel(menu)
 					end
 				else
 					_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, RED_FONT_COLOR:GetRGBA())
@@ -698,7 +830,12 @@ local ButtonTypes = {
 		additionalText = function()
 			return IsInGuild() and select(2, GetNumGuildMembers()) or ""
 		end,
-		tooltips = "Guild",
+		tooltips = {
+			L["Guild"],
+			"\n",
+			LEFT_BUTTON_ICON .. " " .. L["Toggle Guild Frame"],
+			RIGHT_BUTTON_ICON .. " " .. L["Open Guild Frame"],
+		},
 		events = {
 			"GUILD_ROSTER_UPDATE",
 			"PLAYER_GUILD_UPDATE",
@@ -714,14 +851,14 @@ local ButtonTypes = {
 		item = {},
 		tooltips = function(button)
 			local function Update()
-				DT.tooltip:ClearLines()
-				DT.tooltip:SetText(L["Hearthstone"])
-				DT.tooltip:AddLine("\n")
+				GameTooltip:ClearLines()
+				GameTooltip:SetText(L["Hearthstone"])
+				GameTooltip:AddLine("\n")
 				for _, side in ipairs({ "left", "middle", "right" }) do
 					local sideSettings = HEARTSTONE_SIDE_SETTINGS[side]
 					AddDoubleLineForItem(GB:ResolveHearthstoneAction(side), sideSettings.tooltipPrefix, button, side)
 				end
-				DT.tooltip:Show()
+				GameTooltip:Show()
 			end
 
 			button.tooltipsUpdateTimer = C_Timer_NewTicker(1, Update)
@@ -742,7 +879,10 @@ local ButtonTypes = {
 			end,
 			RightButton = function()
 				if not InCombatLockdown() then
-					_G.HousingFramesUtil.ToggleHousingDashboard()
+					local housing = _G.HousingFramesUtil
+					if housing and housing.ToggleHousingDashboard then
+						housing.ToggleHousingDashboard()
+					end
 				else
 					_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, RED_FONT_COLOR:GetRGBA())
 				end
@@ -759,16 +899,37 @@ local ButtonTypes = {
 		name = L["Mission Reports"],
 		icon = W.Media.Icons.barMissionReports,
 		click = {
-			LeftButton = function(button)
-				DT.RegisteredDataTexts["Missions"].onClick(button)
+			LeftButton = function()
+				if not InCombatLockdown() then
+					-- DataTexts' "Missions" entry used to open the garrison landing
+					-- page; the plain global does the same on live and forever.
+					local toggle = _G.GarrisonLandingPage_Toggle
+					if toggle then
+						toggle()
+					elseif _G.ExpansionLandingPage and _G.ExpansionLandingPage.RefreshExpansionOverlay then
+						_G.ExpansionLandingPage:RefreshExpansionOverlay()
+					end
+				else
+					_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, RED_FONT_COLOR:GetRGBA())
+				end
 			end,
 		},
 		additionalText = function()
-			local numMissions = #C_Garrison_GetCompleteMissions(FollowerType_9_0)
-				+ #C_Garrison_GetCompleteMissions(FollowerType_8_0)
-			return tostring(numMissions == 0 and "" or numMissions)
+			if not C_Garrison_GetCompleteMissions then
+				return ""
+			end
+			local numMissions = 0
+			if FollowerType_9_0 then
+				numMissions = numMissions + #C_Garrison_GetCompleteMissions(FollowerType_9_0)
+			end
+			if FollowerType_8_0 then
+				numMissions = numMissions + #C_Garrison_GetCompleteMissions(FollowerType_8_0)
+			end
+			return numMissions > 0 and tostring(numMissions) or ""
 		end,
-		tooltips = "Missions",
+		tooltips = {
+			L["Mission Reports"],
+		},
 	},
 	NONE = {
 		name = L["None"],
@@ -793,7 +954,10 @@ local ButtonTypes = {
 		click = {
 			LeftButton = function()
 				if not InCombatLockdown() then
-					_G.ToggleProfessionsBook()
+					local toggle = _G.ToggleProfessionsBook
+					if toggle then
+						toggle()
+					end
 				else
 					_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, RED_FONT_COLOR:GetRGBA())
 				end
@@ -808,7 +972,7 @@ local ButtonTypes = {
 		icon = W.Media.Icons.barScreenShot,
 		click = {
 			LeftButton = function()
-				DT.tooltip:Hide()
+				GameTooltip:Hide()
 				Screenshot()
 			end,
 			RightButton = function()
@@ -830,7 +994,10 @@ local ButtonTypes = {
 		click = {
 			LeftButton = function()
 				if not InCombatLockdown() then
-					_G.PlayerSpellsUtil.ToggleSpellBookFrame()
+					local util = _G.PlayerSpellsUtil
+					if util and util.ToggleSpellBookFrame then
+						util.ToggleSpellBookFrame()
+					end
 				else
 					_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, RED_FONT_COLOR:GetRGBA())
 				end
@@ -846,7 +1013,10 @@ local ButtonTypes = {
 		click = {
 			LeftButton = function()
 				if not InCombatLockdown() then
-					_G.PlayerSpellsUtil.ToggleClassTalentFrame()
+					local util = _G.PlayerSpellsUtil
+					if util and util.ToggleClassTalentFrame then
+						util.ToggleClassTalentFrame()
+					end
 				else
 					_G.UIErrorsFrame:AddMessage(_G.ERR_NOT_IN_COMBAT, RED_FONT_COLOR:GetRGBA())
 				end
@@ -871,42 +1041,32 @@ local ButtonTypes = {
 		icon = W.Media.Icons.barVolume,
 		click = {
 			LeftButton = function()
-				local vol = C_CVar_GetCVar("Sound_MasterVolume")
-				local volNum = vol and tonumber(vol) or 0
-				C_CVar_SetCVar("Sound_MasterVolume", min(volNum + 0.1, 1))
+				GB:StepMasterVolume(0.1)
 			end,
 			MiddleButton = function()
+				if not C_CVar_SetCVar or not C_CVar_GetCVar then
+					return
+				end
 				local enabled = tonumber(C_CVar_GetCVar("Sound_EnableAllSound")) == 1
-				C_CVar_SetCVar("Sound_EnableAllSound", enabled and 0 or 1)
+				C_CVar_SetCVar("Sound_EnableAllSound", enabled and "0" or "1")
 			end,
 			RightButton = function()
-				local vol = C_CVar_GetCVar("Sound_MasterVolume")
-				local volNum = vol and tonumber(vol) or 0
-				C_CVar_SetCVar("Sound_MasterVolume", max(volNum - 0.1, 0))
+				GB:StepMasterVolume(-0.1)
 			end,
 		},
 		tooltips = function(button)
-			local vol = C_CVar_GetCVar("Sound_MasterVolume")
-			local volNum = vol and tonumber(vol) or 0
-			DT.tooltip:ClearLines()
-			DT.tooltip:SetText(L["Volume"] .. format(": %d%%", volNum * 100))
-			DT.tooltip:AddLine("\n")
-			DT.tooltip:AddLine(LEFT_BUTTON_ICON .. " " .. L["Increase the volume"] .. " (+10%)", 1, 1, 1)
-			DT.tooltip:AddLine(RIGHT_BUTTON_ICON .. " " .. L["Decrease the volume"] .. " (-10%)", 1, 1, 1)
-			DT.tooltip:AddLine(SCROLL_BUTTON_ICON .. " " .. L["Sound ON/OFF"], 1, 1, 1)
-			DT.tooltip:Show()
+			local function Update()
+				GameTooltip:ClearLines()
+				GameTooltip:SetText(L["Volume"] .. format(": %d%%", GB:GetMasterVolume() * 100))
+				GameTooltip:AddLine("\n")
+				GameTooltip:AddLine(LEFT_BUTTON_ICON .. " " .. L["Increase the volume"] .. " (+10%)", 1, 1, 1)
+				GameTooltip:AddLine(RIGHT_BUTTON_ICON .. " " .. L["Decrease the volume"] .. " (-10%)", 1, 1, 1)
+				GameTooltip:AddLine(SCROLL_BUTTON_ICON .. " " .. L["Sound ON/OFF"], 1, 1, 1)
+				GameTooltip:Show()
+			end
 
-			button.tooltipsUpdateTimer = C_Timer_NewTicker(0.3, function()
-				local _vol = C_CVar_GetCVar("Sound_MasterVolume")
-				local _volNum = _vol and tonumber(_vol) or 0
-				DT.tooltip:ClearLines()
-				DT.tooltip:SetText(L["Volume"] .. format(": %d%%", _volNum * 100))
-				DT.tooltip:AddLine("\n")
-				DT.tooltip:AddLine(LEFT_BUTTON_ICON .. " " .. L["Increase the volume"] .. " (+10%)", 1, 1, 1)
-				DT.tooltip:AddLine(RIGHT_BUTTON_ICON .. " " .. L["Decrease the volume"] .. " (-10%)", 1, 1, 1)
-				DT.tooltip:AddLine(SCROLL_BUTTON_ICON .. " " .. L["Sound ON/OFF"], 1, 1, 1)
-				DT.tooltip:Show()
-			end)
+			Update()
+			button.tooltipsUpdateTimer = C_Timer_NewTicker(0.3, Update)
 		end,
 		tooltipsLeave = function(button)
 			if button.tooltipsUpdateTimer and button.tooltipsUpdateTimer.Cancel then
@@ -917,23 +1077,30 @@ local ButtonTypes = {
 }
 
 function GB:UpdateGroupFinderButton()
-	if not C_AddOns_IsAddOnLoaded("MeetingStone") then
+	if not C_AddOns_IsAddOnLoaded or not C_AddOns_IsAddOnLoaded("MeetingStone") then
 		return
 	end
 
-	if self.db.groupFinder.preferNetEaseMeetingStone then
-		ButtonTypes.GROUP_FINDER.macro.LeftButton = "/meetingstone"
-		ButtonTypes.GROUP_FINDER.macro.RightButton = "/click LFDMicroButton"
-		ButtonTypes.GROUP_FINDER.tooltips = {
+	local groupFinder = ButtonTypes.GROUP_FINDER
+	if not groupFinder or not groupFinder.macro then
+		return
+	end
+
+	local preferMeetingStone = self.db and self.db.groupFinder and self.db.groupFinder.preferNetEaseMeetingStone
+
+	if preferMeetingStone then
+		groupFinder.macro.LeftButton = "/meetingstone"
+		groupFinder.macro.RightButton = "/click LFDMicroButton"
+		groupFinder.tooltips = {
 			L["Group Finder"],
 			"\n",
 			LEFT_BUTTON_ICON .. " " .. L["Meeting Stone"],
 			RIGHT_BUTTON_ICON .. " " .. L["Group Finder"],
 		}
 	else
-		ButtonTypes.GROUP_FINDER.macro.LeftButton = "/click LFDMicroButton"
-		ButtonTypes.GROUP_FINDER.macro.RightButton = "/meetingstone"
-		ButtonTypes.GROUP_FINDER.tooltips = {
+		groupFinder.macro.LeftButton = "/click LFDMicroButton"
+		groupFinder.macro.RightButton = "/meetingstone"
+		groupFinder.tooltips = {
 			L["Group Finder"],
 			"\n",
 			LEFT_BUTTON_ICON .. " " .. L["Group Finder"],
@@ -954,50 +1121,161 @@ function GB:OnLeave()
 	end
 end
 
+-- Border/backdrop helper, same pattern as Modules\Social\ChatBar.lua. Replaces
+-- the ElvUI-only frame:CreateBackdrop("Transparent").
+local function ApplyBackdrop(frame, createBorder)
+	if not PP then
+		return
+	end
+
+	local bg = frame.bg or frame:CreateTexture(nil, "BACKGROUND")
+	bg:SetTexture(NORM_TEX)
+	bg:SetVertexColor(0, 0, 0, 0.5)
+	bg:SetAllPoints()
+	if bg.SetSnapToPixelGrid then
+		bg:SetSnapToPixelGrid(false)
+		bg:SetTexelSnappingBias(0)
+	end
+	frame.bg = bg
+
+	if createBorder ~= false then
+		PP.CreateBorder(frame, 0, 0, 0, 1, 1, "BORDER", 0)
+	end
+end
+
 function GB:ConstructBar()
 	if self.bar then
 		return
 	end
 
 	local bar = CreateFrame("Frame", "WTGameBar", E.UIParent)
-	bar:Size(800, 60)
-	bar:Point("TOP", 0, -20)
+	PP.Size(bar, 800, 60)
+	PP.Point(bar, "TOP", 0, -20)
 	bar:SetFrameStrata("MEDIUM")
+	bar:SetClampedToScreen(true)
 
-	bar:SetScript("OnEnter", GenerateClosure(self.OnEnter, self))
-	bar:SetScript("OnLeave", GenerateClosure(self.OnLeave, self))
+	bar:SetScript("OnEnter", function()
+		self:OnEnter()
+	end)
+	bar:SetScript("OnLeave", function()
+		self:OnLeave()
+	end)
 
 	local middlePanel = CreateFrame("Button", "WTGameBarMiddlePanel", bar, "SecureActionButtonTemplate")
-	middlePanel:Size(81, 50)
-	middlePanel:Point("CENTER")
-	middlePanel:CreateBackdrop("Transparent")
+	PP.Size(middlePanel, 81, 50)
+	PP.Point(middlePanel, "CENTER")
+	ApplyBackdrop(middlePanel)
 	middlePanel:RegisterForClicks(W.UseKeyDown and "AnyDown" or "AnyUp")
 	bar.middlePanel = middlePanel
 
 	local leftPanel = CreateFrame("Frame", "WTGameBarLeftPanel", bar)
-	leftPanel:Size(300, 40)
-	leftPanel:Point("RIGHT", middlePanel, "LEFT", -10, 0)
-	leftPanel:CreateBackdrop("Transparent")
+	PP.Size(leftPanel, 300, 40)
+	PP.Point(leftPanel, "RIGHT", middlePanel, "LEFT", -10, 0)
+	ApplyBackdrop(leftPanel)
 	bar.leftPanel = leftPanel
 
 	local rightPanel = CreateFrame("Frame", "WTGameBarRightPanel", bar)
-	rightPanel:Size(300, 40)
-	rightPanel:Point("LEFT", middlePanel, "RIGHT", 10, 0)
-	rightPanel:CreateBackdrop("Transparent")
+	PP.Size(rightPanel, 300, 40)
+	PP.Point(rightPanel, "LEFT", middlePanel, "RIGHT", 10, 0)
+	ApplyBackdrop(rightPanel)
 	bar.rightPanel = rightPanel
-
-	S:CreateShadowModule(leftPanel.backdrop)
-	S:CreateShadowModule(middlePanel.backdrop)
-	S:CreateShadowModule(rightPanel.backdrop)
-	S:MerathilisUISkin(leftPanel.backdrop)
-	S:MerathilisUISkin(middlePanel.backdrop)
-	S:MerathilisUISkin(rightPanel.backdrop)
 
 	self.bar = bar
 
-	E:CreateMover(self.bar, "WTGameBarAnchor", L["Game Bar"], nil, nil, nil, "ALL,WINDTOOLS", function()
-		return GB.db and GB.db.enable
-	end, "WindTools,misc,gameBar")
+	self:ApplyDefaultPosition()
+	self:RegisterMover()
+end
+
+function GB:RegisterMover()
+	if not EUI or not EUI.RegisterUnlockElements or not EUI.MakeUnlockElement then
+		return
+	end
+
+	if self.moverRegistered then
+		return
+	end
+	self.moverRegistered = true
+
+	local MK = EUI.MakeUnlockElement
+	local key = "WTGameBar"
+
+	local function getPos()
+		local global = E.global and E.global.WT
+		return global and global.misc and global.misc.gameBar and global.misc.gameBar.position
+	end
+
+	local elements = {
+		MK({
+			key = key,
+			label = L["Game Bar"],
+			group = "WindTools",
+			order = 910,
+			getFrame = function()
+				return GB.bar
+			end,
+			getSize = function()
+				if not GB.bar then
+					return 0, 0
+				end
+				return GB.bar:GetWidth(), GB.bar:GetHeight()
+			end,
+			savePos = function(_, point, relPoint, x, y)
+				if point and x and y then
+					local global = E.global.WT
+					global.misc = global.misc or {}
+					global.misc.gameBar = global.misc.gameBar or {}
+					global.misc.gameBar.position = {
+						point = point,
+						relPoint = relPoint or point,
+						x = x,
+						y = y,
+					}
+				end
+			end,
+			loadPos = function()
+				local pos = getPos()
+				if not pos then
+					return nil
+				end
+				return {
+					point = pos.point,
+					relPoint = pos.relPoint or pos.point,
+					x = pos.x,
+					y = pos.y,
+				}
+			end,
+			clearPos = function()
+				local global = E.global and E.global.WT
+				if global and global.misc and global.misc.gameBar then
+					global.misc.gameBar.position = nil
+				end
+			end,
+			applyPos = function()
+				GB:ApplyDefaultPosition()
+			end,
+			isHidden = function()
+				return not (GB.db and GB.db.enable)
+			end,
+		}),
+	}
+
+	EUI:RegisterUnlockElements(elements, "EllesmereUI_WindTools")
+end
+
+function GB:ApplyDefaultPosition()
+	if not self.bar then
+		return
+	end
+
+	local pos = E.global and E.global.WT and E.global.WT.misc and E.global.WT.misc.gameBar
+		and E.global.WT.misc.gameBar.position
+
+	self.bar:ClearAllPoints()
+	if pos and pos.point and pos.x and pos.y then
+		self.bar:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
+	else
+		self.bar:SetPoint("TOP", UIParent, "TOP", 0, -20)
+	end
 end
 
 function GB:UpdateBar()
@@ -1007,17 +1285,19 @@ function GB:UpdateBar()
 		self.bar:SetAlpha(1)
 	end
 
-	RegisterStateDriver(self.bar, "visibility", self.db.visibility)
+	if RegisterStateDriver then
+		RegisterStateDriver(self.bar, "visibility", self.db.visibility)
+	end
 end
 
 function GB:ConstructTimeArea()
 	local colon = self.bar.middlePanel:CreateFontString(nil, "OVERLAY")
-	colon:Point("CENTER")
+	PP.Point(colon, "CENTER")
 	F.SetFontWithDB(colon, self.db.time.font)
 	self.bar.middlePanel.colon = colon
 
 	local hour = self.bar.middlePanel:CreateFontString(nil, "OVERLAY")
-	hour:Point("RIGHT", colon, "LEFT", 1, 0)
+	PP.Point(hour, "RIGHT", colon, "LEFT", 1, 0)
 	F.SetFontWithDB(hour, self.db.time.font)
 	self.bar.middlePanel.hour = hour
 
@@ -1027,7 +1307,7 @@ function GB:ConstructTimeArea()
 	animationSetFinished(hour.group.anim)
 
 	local minutes = self.bar.middlePanel:CreateFontString(nil, "OVERLAY")
-	minutes:Point("LEFT", colon, "RIGHT", 0, 0)
+	PP.Point(minutes, "LEFT", colon, "RIGHT", 0, 0)
 	F.SetFontWithDB(minutes, self.db.time.font)
 	self.bar.middlePanel.minutes = minutes
 
@@ -1036,72 +1316,70 @@ function GB:ConstructTimeArea()
 	minutes.group.anim:SetColorType("text")
 
 	local text = self.bar.middlePanel:CreateFontString(nil, "OVERLAY")
-	text:Point("TOP", self.bar, "BOTTOM", 0, -5)
+	PP.Point(text, "TOP", self.bar, "BOTTOM", 0, -5)
 	F.SetFontWithDB(text, self.db.time.systemInfoFont)
 	text:SetAlpha(self.db.time.alwaysSystemInfo and 1 or 0)
 	self.bar.middlePanel.text = text
 
-	self.bar.middlePanel:Size(self.db.timeAreaWidth, self.db.timeAreaHeight)
+	PP.Size(self.bar.middlePanel, self.db.timeAreaWidth, self.db.timeAreaHeight)
+
+	local panel = self.bar.middlePanel
 
 	self:UpdateTime()
 	self.timeAreaUpdateTimer = C_Timer_NewTicker(self.db.time.interval, function()
 		GB:UpdateTime()
 	end)
 
-	DT.RegisteredDataTexts["Time"].eventFunc(VirtualDT["Time"], "ELVUI_FORCE_UPDATE")
-	DT.RegisteredDataTexts["System"].onUpdate(self.bar.middlePanel, 10)
+	panel.text:SetText(self:GetSystemInfoText())
 
 	if self.db.time.alwaysSystemInfo then
 		self.alwaysSystemInfoTimer = C_Timer_NewTicker(1, function()
-			DT.RegisteredDataTexts["System"].onUpdate(self.bar.middlePanel, 10)
+			panel.text:SetText(GB:GetSystemInfoText())
 		end)
 	end
 
-	self:HookScript(self.bar.middlePanel, "OnEnter", function(panel)
+	self.bar.middlePanel:HookScript("OnEnter", function(panel)
 		self:OnEnter()
 		self:AnimationOnEnter(panel)
 
-		DT.RegisteredDataTexts["System"].onUpdate(panel, 10)
+		panel.text:SetText(self:GetSystemInfoText())
 		if not self.db.time.alwaysSystemInfo then
 			E:UIFrameFadeIn(panel.text, self.db.fadeTime, panel.text:GetAlpha(), 1)
 		end
 
 		if self.db.tooltipsAnchor == "ANCHOR_TOP" then
-			DT.tooltip:SetOwner(panel, "ANCHOR_TOP", 0, 10)
+			GameTooltip:SetOwner(panel, "ANCHOR_TOP", 0, 10)
 		else
-			DT.tooltip:SetOwner(panel.text, "ANCHOR_BOTTOM", 0, -10)
+			GameTooltip:SetOwner(panel.text, "ANCHOR_BOTTOM", 0, -10)
 		end
 
 		if IsModifierKeyDown() then
-			DT.RegisteredDataTexts["System"].eventFunc()
-			DT.RegisteredDataTexts["System"].onEnter()
+			self:BuildSystemInfoTooltip()
 
 			self.tooltipTimer = C_Timer_NewTicker(1, function()
-				DT.RegisteredDataTexts["System"].onUpdate(panel, 10)
-				DT.RegisteredDataTexts["System"].eventFunc()
-				DT.RegisteredDataTexts["System"].onEnter()
+				panel.text:SetText(GB:GetSystemInfoText())
+				GB:BuildSystemInfoTooltip()
+				GameTooltip:Show()
 			end)
 		else
-			DT.RegisteredDataTexts["Time"].eventFunc(VirtualDT["Time"], VirtualDTEvent["Time"])
-			DT.RegisteredDataTexts["Time"].onEnter()
-			DT.RegisteredDataTexts["Time"].onLeave()
-
 			self.tooltipTimer = C_Timer_NewTicker(1, function()
-				DT.RegisteredDataTexts["System"].onUpdate(panel, 10)
+				panel.text:SetText(GB:GetSystemInfoText())
 			end)
 
-			DT.tooltip:AddLine("\n")
-			DT.tooltip:AddDoubleLine(format("%s %s", LEFT_BUTTON_ICON, L["Left Button"]), L["Calendar"], 1, 1, 1)
-			DT.tooltip:AddDoubleLine(format("%s %s", RIGHT_BUTTON_ICON, L["Right Button"]), L["Time Manager"], 1, 1, 1)
-			DT.tooltip:AddDoubleLine(format("%s %s", SCROLL_BUTTON_ICON, L["Middle Button"]), L["Reload UI"], 1, 1, 1)
-			DT.tooltip:AddDoubleLine(format("Shift + %s", L["Any"]), L["Collect Garbage"], 1, 1, 1)
-			DT.tooltip:AddDoubleLine(format("Ctrl + Shift + %s", L["Any"]), L["Toggle CPU Profiling"], 1, 1, 1)
+			GameTooltip:ClearLines()
+			GameTooltip:SetText(L["Time"], 1, 1, 1)
+			GameTooltip:AddLine("\n")
+			GameTooltip:AddDoubleLine(format("%s %s", LEFT_BUTTON_ICON, L["Left Button"]), L["Calendar"], 1, 1, 1)
+			GameTooltip:AddDoubleLine(format("%s %s", RIGHT_BUTTON_ICON, L["Right Button"]), L["Time Manager"], 1, 1, 1)
+			GameTooltip:AddDoubleLine(format("%s %s", SCROLL_BUTTON_ICON, L["Middle Button"]), L["Reload UI"], 1, 1, 1)
+			GameTooltip:AddDoubleLine(format("Shift + %s", L["Any"]), L["Collect Garbage"], 1, 1, 1)
+			GameTooltip:AddDoubleLine(format("Ctrl + Shift + %s", L["Any"]), L["Toggle CPU Profiling"], 1, 1, 1)
 
-			DT.tooltip:Show()
+			GameTooltip:Show()
 		end
 	end)
 
-	self:HookScript(self.bar.middlePanel, "OnLeave", function(panel)
+	self.bar.middlePanel:HookScript("OnLeave", function(panel)
 		self:OnLeave()
 		self:AnimationOnLeave(panel)
 
@@ -1109,9 +1387,11 @@ function GB:ConstructTimeArea()
 			E:UIFrameFadeOut(panel.text, self.db.fadeTime, panel.text:GetAlpha(), 0)
 		end
 
-		DT.RegisteredDataTexts["System"].onLeave()
-		DT.tooltip:Hide()
-		self.tooltipTimer:Cancel()
+		GameTooltip:Hide()
+		if self.tooltipTimer then
+			self.tooltipTimer:Cancel()
+			self.tooltipTimer = nil
+		end
 	end)
 
 	self.bar.middlePanel:SetScript("OnClick", function(_, mouseButton)
@@ -1122,8 +1402,9 @@ function GB:ConstructTimeArea()
 			else
 				collectgarbage("collect")
 				ResetCPUUsage()
-				DT.RegisteredDataTexts["System"].eventFunc()
-				DT.RegisteredDataTexts["System"].onEnter()
+				panel.text:SetText(GB:GetSystemInfoText())
+				GB:BuildSystemInfoTooltip()
+				GameTooltip:Show()
 			end
 		elseif mouseButton == "LeftButton" then
 			if not InCombatLockdown() then
@@ -1147,6 +1428,7 @@ function GB:UpdateTimeTicker()
 		GB:UpdateTime()
 	end)
 end
+
 function GB:UpdateTime()
 	local panel = self.bar.middlePanel
 	if not panel or not self.db or not self.db.time or not self.db.additionalText then
@@ -1184,27 +1466,52 @@ function GB:UpdateTime()
 	panel.colon:ClearAllPoints()
 
 	local offset = (panel.hour:GetStringWidth() - panel.minutes:GetStringWidth()) / 2
-	panel.colon:Point("CENTER", offset, -1)
+	PP.Point(panel.colon, "CENTER", offset, -1)
+end
+
+-- UIFrameFlash is gone in 12.1+, so the blinking colon is driven manually.
+function GB:UpdateColonFlash()
+	local panel = self.bar.middlePanel
+
+	if self.colonFlashTimer then
+		self.colonFlashTimer:Cancel()
+		self.colonFlashTimer = nil
+	end
+
+	if not panel or not panel.colon then
+		return
+	end
+
+	panel.colon:SetAlpha(1)
+
+	if not self.db.time.flash then
+		return
+	end
+
+	local dimmed = false
+	self.colonFlashTimer = C_Timer_NewTicker(1, function()
+		if not panel.colon then
+			return
+		end
+		dimmed = not dimmed
+		panel.colon:SetAlpha(dimmed and 0.2 or 1)
+	end)
 end
 
 function GB:UpdateTimeArea()
 	local panel = self.bar.middlePanel
 
-	if self.db.time.flash then
-		E:Flash(panel.colon, 1, true)
-	else
-		E:StopFlash(panel.colon)
-	end
+	self:UpdateColonFlash()
 
 	panel.text:ClearAllPoints()
 	if self.db.tooltipsAnchor == "ANCHOR_TOP" then
-		panel.text:Point("BOTTOM", self.bar, "TOP", 0, 5)
+		PP.Point(panel.text, "BOTTOM", self.bar, "TOP", 0, 5)
 	else
-		panel.text:Point("TOP", self.bar, "BOTTOM", 0, -5)
+		PP.Point(panel.text, "TOP", self.bar, "BOTTOM", 0, -5)
 	end
 
 	if self.db.time.alwaysSystemInfo then
-		DT.RegisteredDataTexts["System"].onUpdate(panel, 10)
+		panel.text:SetText(self:GetSystemInfoText())
 		panel.text:SetAlpha(1)
 		-- Cancel old timer if exists and running
 		if self.alwaysSystemInfoTimer and not self.alwaysSystemInfoTimer:IsCancelled() then
@@ -1212,7 +1519,7 @@ function GB:UpdateTimeArea()
 		end
 		-- Always create new timer to ensure fresh state
 		self.alwaysSystemInfoTimer = C_Timer_NewTicker(1, function()
-			DT.RegisteredDataTexts["System"].onUpdate(panel, 10)
+			panel.text:SetText(GB:GetSystemInfoText())
 		end)
 	else
 		panel.text:SetAlpha(0)
@@ -1229,38 +1536,27 @@ function GB:ButtonOnEnter(button)
 	self:OnEnter()
 	if button.tooltips then
 		if self.db.tooltipsAnchor == "ANCHOR_TOP" then
-			DT.tooltip:SetOwner(button, "ANCHOR_TOP", 0, 20)
+			GameTooltip:SetOwner(button, "ANCHOR_TOP", 0, 20)
 		else
-			DT.tooltip:SetOwner(button, "ANCHOR_BOTTOM", 0, -10)
+			GameTooltip:SetOwner(button, "ANCHOR_BOTTOM", 0, -10)
 		end
 
 		if type(button.tooltips) == "table" then
-			DT.tooltip:ClearLines()
+			GameTooltip:ClearLines()
 			for index, line in ipairs(button.tooltips) do
 				if index == 1 then
-					DT.tooltip:SetText(line)
+					GameTooltip:SetText(line)
 				else
-					DT.tooltip:AddLine(line, 1, 1, 1)
+					GameTooltip:AddLine(line, 1, 1, 1)
 				end
 			end
-			DT.tooltip:Show()
+			GameTooltip:Show()
 		elseif type(button.tooltips) == "string" then
-			local DTModule = DT.RegisteredDataTexts[button.tooltips]
-
-			if VirtualDT[button.tooltips] and DTModule.eventFunc then
-				DTModule.eventFunc(VirtualDT[button.tooltips], VirtualDTEvent[button.tooltips])
-			end
-
-			if DTModule and DTModule.onEnter then
-				DTModule.onEnter()
-			end
-
-			-- If ElvUI Datatext tooltip not shown, display a simple information (e.g. button name) to player
-			if not DT.tooltip:IsShown() then
-				DT.tooltip:ClearLines()
-				DT.tooltip:SetText(button.name)
-				DT.tooltip:Show()
-			end
+			-- Legacy: a string tooltip used to resolve an ElvUI DataText module.
+			-- Everything now ships a table or a function, so fall back to the name.
+			GameTooltip:ClearLines()
+			GameTooltip:SetText(button.name)
+			GameTooltip:Show()
 		elseif type(button.tooltips) == "function" then
 			button.tooltips(button)
 		end
@@ -1274,7 +1570,7 @@ end
 function GB:ButtonOnLeave(button)
 	self:AnimationOnLeave(button)
 	self:OnLeave()
-	DT.tooltip:Hide()
+	GameTooltip:Hide()
 	if button.tooltipsLeave then
 		button.tooltipsLeave(button)
 	end
@@ -1286,12 +1582,12 @@ function GB:ConstructButton()
 	end
 
 	local button = CreateFrame("Button", nil, self.bar, "SecureActionButtonTemplate")
-	button:Size(self.db.buttonSize, self.db.buttonSize)
+	PP.Size(button, self.db.buttonSize, self.db.buttonSize)
 	button:RegisterForClicks(W.UseKeyDown and "AnyDown" or "AnyUp")
 
 	local mainTex = button:CreateTexture(nil, "ARTWORK")
-	mainTex:Point("CENTER")
-	mainTex:Size(self.db.buttonSize, self.db.buttonSize)
+	PP.Point(mainTex, "CENTER")
+	PP.Size(mainTex, self.db.buttonSize, self.db.buttonSize)
 	mainTex.group = _G.CreateAnimationGroup(mainTex)
 	mainTex.group.anim = mainTex.group:CreateAnimation("color")
 	mainTex.group.anim:SetColorType("vertex")
@@ -1300,26 +1596,29 @@ function GB:ConstructButton()
 
 	local notificationTex = button:CreateTexture(nil, "OVERLAY")
 	notificationTex:SetTexture(W.Media.Icons.barNotification)
-	notificationTex:Point("TOPRIGHT")
-	notificationTex:Size(0.38 * self.db.buttonSize)
+	PP.Point(notificationTex, "TOPRIGHT")
+	PP.Size(notificationTex, 0.38 * self.db.buttonSize)
 	button.notificationTex = notificationTex
 
 	local additionalText = button:CreateFontString(nil, "OVERLAY")
-	additionalText:Point(self.db.additionalText.anchor, self.db.additionalText.x, self.db.additionalText.y)
+	PP.Point(additionalText, self.db.additionalText.anchor, self.db.additionalText.x, self.db.additionalText.y)
 	F.SetFontWithDB(additionalText, self.db.additionalText.font)
 	additionalText:SetJustifyH("CENTER")
 	additionalText:SetJustifyV("MIDDLE")
 	button.additionalText = additionalText
 
-	self:HookScript(button, "OnEnter", "ButtonOnEnter")
-	self:HookScript(button, "OnLeave", "ButtonOnLeave")
-
+	button:HookScript("OnEnter", function()
+		GB:ButtonOnEnter(button)
+	end)
+	button:HookScript("OnLeave", function()
+		GB:ButtonOnLeave(button)
+	end)
 	tinsert(self.buttons, button)
 end
 
 _G.WTGameBar_UpdateHearthstoneButtons = function()
 	F.TaskManager:OutOfCombat(function()
-		for _, btn in pairs(GB.HearthstoneButtons) do
+		for _, btn in pairs(GB.HearthstoneButtons or {}) do
 			if btn.type == "HEARTHSTONE" then
 				for _, side in ipairs({ "left", "middle", "right" }) do
 					GB:UpdateHearthstoneButtonMacro(btn, side)
@@ -1334,8 +1633,14 @@ function GB:UpdateButton(button, buttonType)
 		return
 	end
 
-	local config = ButtonTypes[buttonType]
-	button:Size(self.db.buttonSize, self.db.buttonSize)
+	local config = buttonType and ButtonTypes[buttonType]
+	if not config then
+		-- A saved profile can name a button this build no longer has; treat it
+		-- as an empty slot instead of indexing nil below.
+		config = ButtonTypes.NONE
+		buttonType = "NONE"
+	end
+	PP.Size(button, self.db.buttonSize, self.db.buttonSize)
 	button.type = buttonType
 	button.name = config.name
 	button.tooltips = config.tooltips
@@ -1358,7 +1663,9 @@ function GB:UpdateButton(button, buttonType)
 	elseif config.click then
 		button.Click = function(_, mouseButton)
 			local func = mouseButton and config.click[mouseButton] or config.click.LeftButton
-			func(GB.bar.middlePanel)
+			if func then
+				func(GB.bar.middlePanel)
+			end
 		end
 		button:SetAttribute("type*", "click")
 		button:SetAttribute("clickbutton", button)
@@ -1376,7 +1683,7 @@ function GB:UpdateButton(button, buttonType)
 	-- Normal
 	button.mainTex.group:Stop()
 	button.mainTex:SetTexture(config.icon)
-	button.mainTex:Size(self.db.buttonSize, self.db.buttonSize)
+	PP.Size(button.mainTex, self.db.buttonSize, self.db.buttonSize)
 	animationReset(button.mainTex.group.anim)
 	button.mainTex.group.anim.isEnterMode = true
 
@@ -1421,7 +1728,7 @@ function GB:UpdateButton(button, buttonType)
 		end
 
 		button.additionalText:ClearAllPoints()
-		button.additionalText:Point(self.db.additionalText.anchor, self.db.additionalText.x, self.db.additionalText.y)
+		PP.Point(button.additionalText, self.db.additionalText.anchor, self.db.additionalText.x, self.db.additionalText.y)
 		F.SetFontWithDB(button.additionalText, self.db.additionalText.font)
 		button.additionalText:Show()
 	else
@@ -1460,7 +1767,9 @@ end
 
 function GB:UpdateHouseAttributes(button)
 	if not GB.playerHouseList or #GB.playerHouseList == 0 then
-		C_Housing_GetPlayerOwnedHouses()
+		if C_Housing_GetPlayerOwnedHouses then
+			C_Housing_GetPlayerOwnedHouses()
+		end
 		return
 	end
 
@@ -1472,16 +1781,29 @@ function GB:UpdateHouseAttributes(button)
 	end
 end
 
-function GB:UpdateLayout()
-	if self.db.backdrop then
-		self.bar.leftPanel.backdrop:Show()
-		self.bar.middlePanel.backdrop:Show()
-		self.bar.rightPanel.backdrop:Show()
-	else
-		self.bar.leftPanel.backdrop:Hide()
-		self.bar.middlePanel.backdrop:Hide()
-		self.bar.rightPanel.backdrop:Hide()
+local function SetPanelBackdrop(frames, shown)
+	for _, frame in ipairs(frames) do
+		if frame.bg then
+			if shown then
+				frame.bg:Show()
+			else
+				frame.bg:Hide()
+			end
+		end
+		if PP then
+			if shown then
+				if PP.ShowBorder then
+					PP.ShowBorder(frame)
+				end
+			elseif PP.HideBorder then
+				PP.HideBorder(frame)
+			end
+		end
 	end
+end
+
+function GB:UpdateLayout()
+	SetPanelBackdrop({ self.bar.leftPanel, self.bar.middlePanel, self.bar.rightPanel }, self.db.backdrop)
 
 	local numLeftButtons, numRightButtons = 0, 0
 
@@ -1493,9 +1815,9 @@ function GB:UpdateLayout()
 			button:Show()
 			button:ClearAllPoints()
 			if not lastButton then
-				button:Point("LEFT", self.bar.leftPanel, "LEFT", self.db.backdropSpacing, 0)
+				PP.Point(button, "LEFT", self.bar.leftPanel, "LEFT", self.db.backdropSpacing, 0)
 			else
-				button:Point("LEFT", lastButton, "RIGHT", self.db.spacing, 0)
+				PP.Point(button, "LEFT", lastButton, "RIGHT", self.db.spacing, 0)
 			end
 			lastButton = button
 			numLeftButtons = numLeftButtons + 1
@@ -1512,7 +1834,7 @@ function GB:UpdateLayout()
 			+ (numLeftButtons - 1) * self.db.spacing
 			+ numLeftButtons * self.db.buttonSize
 		local panelHeight = self.db.backdropSpacing * 2 + self.db.buttonSize
-		self.bar.leftPanel:Size(panelWidth, panelHeight)
+		PP.Size(self.bar.leftPanel, panelWidth, panelHeight)
 	end
 
 	-- Right Panel
@@ -1523,9 +1845,9 @@ function GB:UpdateLayout()
 			button:Show()
 			button:ClearAllPoints()
 			if not lastButton then
-				button:Point("LEFT", self.bar.rightPanel, "LEFT", self.db.backdropSpacing, 0)
+				PP.Point(button, "LEFT", self.bar.rightPanel, "LEFT", self.db.backdropSpacing, 0)
 			else
-				button:Point("LEFT", lastButton, "RIGHT", self.db.spacing, 0)
+				PP.Point(button, "LEFT", lastButton, "RIGHT", self.db.spacing, 0)
 			end
 			lastButton = button
 			numRightButtons = numRightButtons + 1
@@ -1542,11 +1864,11 @@ function GB:UpdateLayout()
 			+ (numRightButtons - 1) * self.db.spacing
 			+ numRightButtons * self.db.buttonSize
 		local panelHeight = self.db.backdropSpacing * 2 + self.db.buttonSize
-		self.bar.rightPanel:Size(panelWidth, panelHeight)
+		PP.Size(self.bar.rightPanel, panelWidth, panelHeight)
 	end
 
 	-- Time Panel
-	self.bar.middlePanel:Size(self.db.timeAreaWidth, self.db.timeAreaHeight)
+	PP.Size(self.bar.middlePanel, self.db.timeAreaWidth, self.db.timeAreaHeight)
 
 	-- Update the size of moveable zones
 	local areaWidth = 20 + self.bar.middlePanel:GetWidth()
@@ -1559,7 +1881,7 @@ function GB:UpdateLayout()
 	local rightHeight = self.bar.rightPanel:IsShown() and self.bar.rightPanel:GetHeight() or 0
 	areaHeight = max(max(leftHeight, rightHeight), areaHeight)
 
-	self.bar:Size(areaWidth, areaHeight)
+	PP.Size(self.bar, areaWidth, areaHeight)
 end
 
 function GB:NEW_TOY_ADDED(_, toyID)
@@ -1610,6 +1932,10 @@ function GB:PLAYER_HOUSE_LIST_UPDATED(_, houseInfoList)
 end
 
 function GB:Initialize()
+	if self.initialized then
+		return
+	end
+
 	self.db = E.db.WT.misc.gameBar
 
 	if not self.db or not self.db.enable then
@@ -1621,12 +1947,6 @@ function GB:Initialize()
 			self:Initialize()
 		end)
 		return
-	end
-
-	for name, vDT in pairs(VirtualDT) do
-		if DT.RegisteredDataTexts[name] and DT.RegisteredDataTexts[name].applySettings then
-			DT.RegisteredDataTexts[name].applySettings(vDT, E.media.hexvaluecolor)
-		end
 	end
 
 	self:UpdateGroupFinderButton()
@@ -1645,8 +1965,12 @@ function GB:Initialize()
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
 	self:RegisterEvent("COVENANT_CHOSEN", "UpdateHearthStoneTable")
 	self:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
-	C_Housing_GetPlayerOwnedHouses()
-	self:SecureHook(_G.GuildMicroButton, "UpdateNotificationIcon", "UpdateGuildButton")
+	if C_Housing_GetPlayerOwnedHouses then
+		C_Housing_GetPlayerOwnedHouses()
+	end
+	if _G.GuildMicroButton and _G.GuildMicroButton.UpdateNotificationIcon then
+		self:SecureHook(_G.GuildMicroButton, "UpdateNotificationIcon", "UpdateGuildButton")
+	end
 	self.initialized = true
 end
 
@@ -1705,7 +2029,9 @@ function GB:ProfileUpdate()
 		end
 	else
 		if self.initialized then
-			UnregisterStateDriver(self.bar, "visibility")
+			if UnregisterStateDriver then
+				UnregisterStateDriver(self.bar, "visibility")
+			end
 			self.bar:Hide()
 		end
 	end
@@ -1736,7 +2062,9 @@ function GB:GetNextRandomHearthstone(currentIndex, times)
 
 	local randomIndex = random(1, #availableHearthstones)
 	local itemID = availableHearthstones[randomIndex]
-	local isToyNotUsable = PlayerHasToy(itemID) and not C_ToyBox_IsToyUsable(itemID)
+	local isToyNotUsable = PlayerHasToy and PlayerHasToy(itemID)
+		and C_ToyBox_IsToyUsable
+		and not C_ToyBox_IsToyUsable(itemID)
 	if isToyNotUsable or currentIndex and randomIndex == currentIndex then
 		return self:GetNextRandomHearthstone(currentIndex, (times or 0) + 1)
 	end
@@ -1818,18 +2146,20 @@ function GB:UpdateHearthStoneTable()
 		hearthstonesTable[itemID] = true
 	end
 
-	local covenantHearthstones = {
+	local covenantHearthstones = Enum_CovenantType and {
 		[184353] = { covenantID = Enum_CovenantType.Kyrian, achievementCriteriaNum = 1 },
 		[183716] = { covenantID = Enum_CovenantType.Venthyr, achievementCriteriaNum = 4 },
 		[180290] = { covenantID = Enum_CovenantType.NightFae, achievementCriteriaNum = 3 },
 		[182773] = { covenantID = Enum_CovenantType.Necrolord, achievementCriteriaNum = 2 },
 	}
 
-	local activeCovenantID = C_Covenants_GetActiveCovenantID()
+	local activeCovenantID = C_Covenants_GetActiveCovenantID and C_Covenants_GetActiveCovenantID()
 
-	for toyID, config in pairs(covenantHearthstones) do
-		local criteriaCompleted = select(3, GetAchievementCriteriaInfo(15646, config.achievementCriteriaNum))
-		hearthstonesTable[toyID] = criteriaCompleted or activeCovenantID == config.covenantID
+	if covenantHearthstones and GetAchievementCriteriaInfo then
+		for toyID, config in pairs(covenantHearthstones) do
+			local criteriaCompleted = select(3, GetAchievementCriteriaInfo(15646, config.achievementCriteriaNum))
+			hearthstonesTable[toyID] = criteriaCompleted or activeCovenantID == config.covenantID
+		end
 	end
 
 	local raceHeartstones = {
@@ -1853,7 +2183,8 @@ function GB:UpdateHearthStoneTable()
 		end
 
 		if hearthstonesTable[id] then
-			if C_Item_GetItemCount(id) >= 1 or PlayerHasToy(id) then
+			local count = C_Item_GetItemCount and C_Item_GetItemCount(id) or 0
+			if count >= 1 or (PlayerHasToy and PlayerHasToy(id)) then
 				tinsert(availableHearthstones, id)
 			end
 		end
