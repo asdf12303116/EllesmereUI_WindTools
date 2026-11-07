@@ -549,7 +549,11 @@ function RM:ProfileUpdate()
 
 	if not self.db.enable then
 		if self.bar then
-			self.bar:Hide()
+			-- Hiding the bar on its own does not stick: the visibility state
+			-- driver registered below keeps showing it again, and a frame with
+			-- secure buttons cannot be hidden while in combat. ToggleSettings
+			-- already unregisters the driver, hides, and defers in combat.
+			self:ToggleSettings()
 		end
 		return
 	end
