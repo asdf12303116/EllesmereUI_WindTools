@@ -1,6 +1,7 @@
+local _, addon = ...
 local W ---@class WindTools
 local F, E, L ---@type Functions, ElvUI, LocaleTable
-W, F, E, L = unpack((select(2, ...)))
+W, F, E, L = unpack(addon)
 
 local _G = _G
 
@@ -10,6 +11,7 @@ local pairs = pairs
 local print = print
 local strlower = strlower
 local strsub = strsub
+local strtrim = strtrim
 local strupper = strupper
 local type = type
 local wipe = wipe
@@ -101,18 +103,15 @@ do
 	end
 end
 
--- /wt and /windtools open the standalone WindTools options panel.
--- An optional page name argument (e.g. "/wt social") jumps straight to a page.
+-- /wt and /windtools open the WindTools pages inside the EllesmereUI panel.
+-- An optional page or module name (e.g. "/wt social") jumps straight there.
 W:AddCommand("OPTIONS", { "/wt", "/windtools", "/ewt" }, function(msg)
-	if not W.ToggleOptions then
-		F.Print("Options panel is not available.")
+	local page = msg and strlower(strtrim(msg))
+	page = (page ~= "" and page) or nil
+
+	if addon.OpenOptionsPlugin and addon.OpenOptionsPlugin(page) then
 		return
 	end
 
-	local page = msg and strlower(strtrim(msg))
-	if page and page ~= "" then
-		W:ToggleOptions(page)
-	else
-		W:ToggleOptions()
-	end
+	F.Print("Options are not available: EllesmereUI refused the page registration.")
 end)

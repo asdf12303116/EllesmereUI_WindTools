@@ -295,13 +295,11 @@ local function CreateCompatE()
 	end
 
 	function E:ToggleOptions(path)
-		-- Route to the standalone WindTools options panel instead of the
-		-- EllesmereUI main panel. Accepts an optional page name or an
-		-- ElvUI-style comma-separated path like "WindTools,information".
-		-- addon[1] is W (resolved at call time, not at CreateCompatE time).
-		local wt = addon[1]
-		if wt and wt.ToggleOptions then
-			return wt:ToggleOptions(path)
+		-- Kept for modules ported from WindTools that still call E:ToggleOptions
+		-- with an ElvUI-style path like "WindTools,information,changelog". The
+		-- pages live in the EllesmereUI panel, so the path is resolved there.
+		if addon.OpenOptionsPlugin then
+			addon.OpenOptionsPlugin(path)
 		end
 	end
 
