@@ -590,6 +590,8 @@ function GB:GetSystemInfoText()
 		home, world = select(3, GetNetStats())
 	end
 	home, world = floor(home or 0), floor(world or 0)
+	-- FPS and MS are standard unit names, so they stay as they are in every
+	-- locale; only the words around them carry a translation.
 	return format("%d FPS  %d/%d MS", fps, home, world)
 end
 
@@ -606,15 +608,15 @@ function GB:BuildSystemInfoTooltip()
 
 	GameTooltip:SetText(L["Game Bar"], 1, 1, 1)
 	GameTooltip:AddDoubleLine("FPS", tostring(fps), 0.6, 0.6, 0.6, 1, 1, 1)
-	GameTooltip:AddDoubleLine("Home", tostring(home) .. " MS", 0.6, 0.6, 0.6, 1, 1, 1)
-	GameTooltip:AddDoubleLine("World", tostring(world) .. " MS", 0.6, 0.6, 0.6, 1, 1, 1)
-	GameTooltip:AddDoubleLine("Download", format("%.1f KB/s", inKB), 0.6, 0.6, 0.6, 1, 1, 1)
-	GameTooltip:AddDoubleLine("Upload", format("%.1f KB/s", outKB), 0.6, 0.6, 0.6, 1, 1, 1)
+	GameTooltip:AddDoubleLine(L["Home Latency"], tostring(home) .. " MS", 0.6, 0.6, 0.6, 1, 1, 1)
+	GameTooltip:AddDoubleLine(L["World Latency"], tostring(world) .. " MS", 0.6, 0.6, 0.6, 1, 1, 1)
+	GameTooltip:AddDoubleLine(L["Download"], format("%.1f KB/s", inKB), 0.6, 0.6, 0.6, 1, 1, 1)
+	GameTooltip:AddDoubleLine(L["Upload"], format("%.1f KB/s", outKB), 0.6, 0.6, 0.6, 1, 1, 1)
 
 	UpdateSystemMemoryCache()
 	if #sysMemTable > 0 then
 		GameTooltip:AddLine(" ")
-		GameTooltip:AddLine("Memory", 1, 1, 1)
+		GameTooltip:AddLine(L["Memory"], 1, 1, 1)
 		for i = 1, min(10, #sysMemTable) do
 			GameTooltip:AddDoubleLine(sysMemTable[i].name, FormatMemory(sysMemTable[i].mem), 1, 1, 1, 0.6, 0.6, 0.6)
 		end
