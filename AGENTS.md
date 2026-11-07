@@ -229,7 +229,9 @@ pwsh -File .\package.ps1 -Version 0.3.0   # 把版本号定死，不看 tag、�
 
 默认是开发版：基础号取 `.toc` 的 `## X-Version`，后面拼 `-<短 hash>`，即 `0.2.8-8b28c90`。只有 `-Release` 才出干净版本号，此时工作区脏了会告警。
 
-zip 内顶层是 `EllesmereUI_WindTools\`，`## Version: @project-version@` 会替换成实际版本，`--@do-not-package@` 段会被删掉。以点开头的文件和目录一律不进包，其余排除项看 `.pkgmeta` 的 `ignore` —— 新增根目录的工具文件（脚本、文档）记得补进去，否则会被打进包里。
+zip 内顶层是 `EllesmereUI_WindTools\`，`## Version: @project-version@` 会替换成实际版本，`--@do-not-package@` 段会被删掉。
+
+**进包的文件 = git 会跟踪的文件**（`git ls-files --cached --others --exclude-standard`），所以本机目录只要写进 `.gitignore` 就不会混进包：`backups\`、`.release\` 都是这么挡掉的。在此基础上再滤掉以点开头的路径与 `.pkgmeta` 的 `ignore`。新增根目录的工具文件（脚本、文档）仍要补进 `.pkgmeta` 的 ignore，否则会被打进包里。
 
 ## 红线
 
