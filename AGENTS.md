@@ -206,7 +206,9 @@ if self.initialized then return end
 ## 本地化
 
 - 文案一律 `L["..."]`，不在源码里写死句子。
-- `Locales\` 下文件由 WindToolsScripts 生成，**不要手改**；新 key 同时提供 enUS 与 zhCN。
+- 新 key 同时提供 enUS 与 zhCN。
+- **不要定义 EllesmereUI 已有的 key**：两个插件共用 `EllesmereUI.RegisterLocale` 返回的同一张表，后加载的覆盖先加载的，所以本插件的词条会把 EUI 的译文顶掉。EUI 有的 key 一律交给 EUI，本插件 `Locales\` 里删掉。
+- EUI 的译文与本插件语义不符时（已发生的例子：`Home` 在 EUI 是「本地延迟」，本插件原来指「家宅」），**不要覆盖**，改用语义正确的另一个 key（`Home` → `Housing`），并把冲突报告给用户。
 - 取不到本地化表时降级而不是报错：`local function L(text) return EUI and EUI.L and EUI.L(text) or text end`（`Initialize.lua:8-10`）。
 
 ## 变更记录与版本
