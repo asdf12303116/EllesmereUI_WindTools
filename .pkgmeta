@@ -6,6 +6,7 @@ manual-changelog:
 
 ignore:
   - AGENTS.md
+  - OPTIONS_PLUGIN_MIGRATION.md
   - package.ps1
   - .gcignore
   - .gitattributes
