@@ -20,7 +20,7 @@ local math_abs = math.abs
 -- builder registered under its category.
 local PLUGIN_ID = "EllesmereUI_WindTools"
 
--- Grouping follows the seven blocks the standalone panel already used, because
+-- Grouping follows the seven blocks the pages were always split into, because
 -- RegisterPlugin allows 20 modules and 20 pages per module while the pages
 -- themselves number 27: one module per page would exceed the limit.
 --
@@ -128,7 +128,8 @@ local function InstallContentHeaderRouting()
 	addon.SetContentHeader = function(builder)
 		local pageName = TargetPage(builder)
 		if not pageName then
-			-- The standalone panel is the one on screen.
+			-- Nothing identifies a page, so let the header land on whatever page
+			-- EllesmereUI currently shows.
 			if previous then return previous(builder) end
 			return
 		end
@@ -183,9 +184,9 @@ local function GetHeaderBuilder(pageName)
 end
 
 -- Resetting one module must not touch the others, so each module lists the
--- slices of the three databases it owns. The standalone panel reset the whole
--- profile at once; EllesmereUI's footer button resets the module being viewed,
--- which is the narrower granularity the plugin API offers.
+-- slices of the three databases it owns. The standalone panel that used to reset
+-- the whole profile is gone; EllesmereUI's footer button resets the module being
+-- viewed, which is the narrower granularity the plugin API offers.
 local RESET_SLICES = {
 	General = { { "profile", "misc" }, { "global", "core" }, { "global", "developer" } },
 	Items = { { "profile", "item" }, { "private", "item" }, { "global", "item" } },
