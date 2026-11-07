@@ -8,6 +8,7 @@ local DBSet2 = addon.DBSet2
 local FontSection = addon.FontSection
 local KeyValueEditorButton = addon.KeyValueEditorButton
 local GetLSMStatusbars = addon.GetLSMStatusbars
+local SafeModuleCall = addon.SafeModuleCall
 
 local ORIENTATION_VALUES = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" }
 local ORIENTATION_ORDER = { "HORIZONTAL", "VERTICAL" }
