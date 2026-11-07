@@ -101,10 +101,16 @@ addon.OptionsPluginModuleByPage = MODULE_BY_PAGE
 local headerForPage = {}
 local buildingPageName
 local lastBuiltPage
+local routingInstalled
 
 local function InstallContentHeaderRouting()
+	-- A boolean, not a marker field: addon.SetContentHeader is a function value,
+	-- and Lua refuses to index one, so the usual "stamp the wrapper" trick would
+	-- raise instead of guard.
+	if routingInstalled then return end
+	routingInstalled = true
+
 	local previous = addon.SetContentHeader
-	if previous and previous._windToolsRouted then return end
 
 	-- Which page does this header belong to? A build answers it directly. A
 	-- redraw from a header's own control is answered by the builder's identity,
@@ -141,14 +147,13 @@ local function InstallContentHeaderRouting()
 			return EUI:SetContentHeader(builder)
 		end
 	end
-	addon.SetContentHeader._windToolsRouted = true
 
 	-- The builder stays parked. Invalidating drops EllesmereUI's rendered header,
 	-- not the knowledge of which page wants one: the getter is asked for that
 	-- builder again straight after an invalidate (ExtraItemBar's setter does
 	-- exactly that), so clearing it here would lose the header for good.
 	local previousInvalidate = addon.InvalidateContentHeaderCache
-	if previousInvalidate and not previousInvalidate._windToolsRouted then
+	if previousInvalidate then
 		addon.InvalidateContentHeaderCache = function()
 			local EUI = _G.EllesmereUI
 			if EUI and EUI.InvalidateContentHeaderCache then
@@ -156,7 +161,6 @@ local function InstallContentHeaderRouting()
 			end
 			return previousInvalidate()
 		end
-		addon.InvalidateContentHeaderCache._windToolsRouted = true
 	end
 end
 
