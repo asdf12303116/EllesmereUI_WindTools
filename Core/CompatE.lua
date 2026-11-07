@@ -240,6 +240,7 @@ local function CreateCompatE()
 	E.mynameRealm = E.myname .. "-" .. E.myrealm
 	E.myclass = select(2, UnitClass("player")) or "PRIEST"
 	E.myClassColor = ClassColor(E.myclass, true)
+	E.myrace = select(2, UnitRace("player")) or "Human"
 
 	function E:Delay(delay, callback, ...)
 		local args = { ... }
@@ -272,12 +273,21 @@ local function CreateCompatE()
 		return ClassColor(classFile, asTable)
 	end
 
-	function E:UIFrameFadeIn(...)
-		return UIFrameFadeIn(...)
+	-- UIFrameFade* is not part of the documented API surface, so a client may
+	-- ship without it. Fall back to setting the target alpha directly: the fade
+	-- is cosmetic, and a hard jump beats an error on the mouse-over path.
+	function E:UIFrameFadeIn(frame, timeToFade, startAlpha, endAlpha)
+		if UIFrameFadeIn then
+			return UIFrameFadeIn(frame, timeToFade, startAlpha, endAlpha)
+		end
+		frame:SetAlpha(endAlpha or 1)
 	end
 
-	function E:UIFrameFadeOut(...)
-		return UIFrameFadeOut(...)
+	function E:UIFrameFadeOut(frame, timeToFade, startAlpha, endAlpha)
+		if UIFrameFadeOut then
+			return UIFrameFadeOut(frame, timeToFade, startAlpha, endAlpha)
+		end
+		frame:SetAlpha(endAlpha or 0)
 	end
 
 	function E:StaticPopup_Show(name, ...)
@@ -306,10 +316,16 @@ local function CreateCompatE()
 	end
 
 	function E:IsSecretValue(value)
+		if issecretvalue then
+			return issecretvalue(value)
+		end
 		return value == nil
 	end
 
 	function E:NotSecretValue(value)
+		if issecretvalue then
+			return not issecretvalue(value)
+		end
 		return value ~= nil
 	end
 
