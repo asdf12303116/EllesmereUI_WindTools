@@ -7,6 +7,7 @@ local DBGet2 = addon.DBGet2
 local DBSet2 = addon.DBSet2
 local SafeModuleCall = addon.SafeModuleCall
 local FontSection = addon.FontSection
+local C_Item_GetItemInfo = _G.C_Item.GetItemInfo
 
 
 local ceil = ceil
@@ -344,12 +345,12 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 		local names = {}
 		if isArray then
 			for _, id in ipairs(list) do
-				local n = _G.GetItemInfo(id)
+				local n = C_Item_GetItemInfo(id)
 				names[#names + 1] = n or tostring(id)
 			end
 		else
 			for id in pairs(list) do
-				local n = _G.GetItemInfo(id)
+				local n = C_Item_GetItemInfo(id)
 				names[#names + 1] = n or tostring(id)
 			end
 			table.sort(names)

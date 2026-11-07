@@ -15,6 +15,8 @@ local IsAltKeyDown = IsAltKeyDown
 local C_CVar_GetCVar = C_CVar.GetCVar
 local C_CVar_GetCVarBool = C_CVar.GetCVarBool
 local C_CVar_SetCVar = C_CVar.SetCVar
+local C_Item_GetItemInfo = _G.C_Item.GetItemInfo
+local C_Item_GetItemInfoInstant = _G.C_Item.GetItemInfoInstant
 
 addon.OptionBuilders = addon.OptionBuilders or {}
 
@@ -49,24 +51,6 @@ local function SafeModuleCall(module, method, ...)
 	return xpcall(function() return fn(module, unpack(args)) end, function(err) return geterrorhandler()(err) end)
 end
 addon.SafeModuleCall = SafeModuleCall
-
--- WindTools option files were originally written against helper signatures that
--- take dropdown order before get/set. EllesmereUI.Widgets:Dropdown expects
--- values, getValue, setValue, order. Normalize both forms in one place so pages
--- do not crash when a legacy call reaches EUI's widget factory.
-do
-	local Widgets = _G.EllesmereUI and _G.EllesmereUI.Widgets
-	if Widgets and not Widgets._windToolsDropdownCompat then
-		local originalDropdown = Widgets.Dropdown
-		Widgets.Dropdown = function(self, parent, text, yOffset, values, a, b, c, d)
-			if type(a) == "table" and type(b) == "function" then
-				return originalDropdown(self, parent, text, yOffset, values, b, c, a, d)
-			end
-			return originalDropdown(self, parent, text, yOffset, values, a, b, c, d)
-		end
-		Widgets._windToolsDropdownCompat = true
-	end
-end
 
 local function DBGet(t, k)
 	return function() return t and t[k] end
@@ -383,11 +367,11 @@ function addon.OpenListDropdown(opts, anchorBtn)
 
 				local numKey = tonumber(key)
 				if numKey then
-					if _G.C_Item and _G.C_Item.GetItemInfoInstant then
-						local _, _, _, _, iconFileID = _G.C_Item.GetItemInfoInstant(numKey)
+					if C_Item_GetItemInfoInstant then
+						local _, _, _, _, iconFileID = C_Item_GetItemInfoInstant(numKey)
 						if iconFileID then icon:SetTexture(iconFileID) end
 					end
-					local iName = _G.GetItemInfo(numKey)
+					local iName = C_Item_GetItemInfo and C_Item_GetItemInfo(numKey)
 					if iName then
 						nameFS:SetText(iName .. " (" .. key .. ")")
 					else
@@ -395,7 +379,7 @@ function addon.OpenListDropdown(opts, anchorBtn)
 						local tc = 0; local ticker
 						ticker = _G.C_Timer.NewTicker(0.2, function()
 							tc = tc + 1
-							local n = _G.GetItemInfo(numKey)
+							local n = C_Item_GetItemInfo and C_Item_GetItemInfo(numKey)
 							if n then
 								nameFS:SetText(n .. " (" .. key .. ")")
 								ticker:Cancel()
