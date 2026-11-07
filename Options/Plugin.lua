@@ -3,16 +3,25 @@ local W = addon[1]
 
 local _G = _G
 
-local debug = debug
 local error = error
 local ipairs = ipairs
 local pairs = pairs
 local strlower = strlower
+local tostring = tostring
 local type = type
 local wipe = wipe
 local xpcall = xpcall
+local debugstack = debugstack
 
 local math_abs = math.abs
+
+-- The client ships without the Lua debug library, so there is no
+-- debug.traceback to hand to xpcall. debugstack is Blizzard's own equivalent;
+-- the message comes first so a report still leads with what went wrong.
+local function BuildPageError(message)
+	if not debugstack then return tostring(message) end
+	return tostring(message) .. "\n" .. debugstack(2)
+end
 
 -- The settings pages are handed to EllesmereUI's own options panel instead of
 -- being drawn here. EUI owns the window, the sidebar and the scrolling, so this
@@ -174,7 +183,7 @@ local function BuildPage(pageName, parent, yOffset)
 	-- error path instead of two.
 	local previousPage = buildingPageName
 	buildingPageName = pageName
-	local ok, height = xpcall(addon.BuildOptionsPage, debug.traceback, pageName, parent, yOffset)
+	local ok, height = xpcall(addon.BuildOptionsPage, BuildPageError, pageName, parent, yOffset)
 	buildingPageName = previousPage
 
 	if not ok then error(height, 0) end
