@@ -300,8 +300,19 @@ W:RegisterEvent("PLAYER_LOGIN", function()
         SafeCall(addon.RegisterOptionsPlugin)
     end
     RegisterBlizzardOptionsEntry()
-    if db and db.profile.core and db.profile.core.loginMessage then
-        Print("loaded for EllesmereUI.")
+    -- The login message is an account wide preference: Options/Advanced.lua
+    -- writes it to E.global.WT.core, which is the table Settings/Global.lua
+    -- defines. Reading profile.core here matched nothing, so the switch never
+    -- did anything.
+    if E.global.WT and E.global.WT.core and E.global.WT.core.loginMessage then
+        -- Upstream printed a small logo plus "<title> <version> Loaded." followed
+        -- by a line of feedback channels. The channels belong to upstream and do
+        -- not apply to this port, so only the version line is kept. It bypasses
+        -- Print because that already prefixes [WindTools] and the locale string
+        -- carries the title itself.
+        if EUI.Print then
+            EUI.Print(format(L("%s %s Loaded."), W.Title, W.Version))
+        end
     end
 end)
 
