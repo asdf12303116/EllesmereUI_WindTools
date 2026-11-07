@@ -20,7 +20,7 @@
 
 | Module | Status | Notes |
 |---|---|---|
-| Options Panel | ✅ Done | Merged into the EllesmereUI options panel; unsupported pages are disabled |
+| Options Panel | ✅ Done | Merged into the EllesmereUI options panel; pages for unported modules are not shown at all |
 | **Extra Items Bar** | ✅ Done | 5 customizable bars, keybinds, auto hide when empty |
 | **Chat Bar** | ✅ Done | Channel switching bar, block/text styles, auto-hide, mouseover |
 | **Smart Tab** | ✅ Done | Tab channel cycling, whisper history, channel toggles |
