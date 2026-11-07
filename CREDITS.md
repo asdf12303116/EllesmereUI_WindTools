@@ -49,6 +49,9 @@
 - LibAnim
   - Hydra (as bundled with ElvUI by tukui.org)
 
+- Media textures and chat logos
+  - ElvUI (tukui.org), bundled because EllesmereUI does not ship them
+
 - Announcement
   - Venomisto (InstanceResetAnnouncer)
   - Wetxius, Shestak (ShestakUI)

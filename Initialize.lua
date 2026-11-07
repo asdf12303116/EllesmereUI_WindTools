@@ -293,6 +293,9 @@ end
 W:RegisterEvent("PLAYER_LOGIN", function()
     InitDB()
     W.initialized = true
+    -- Modules\Misc\Core.lua gates its ADDON_LOADED handler on this flag,
+    -- so every Misc module silently never ran before it was set.
+    E.initialized = true
     SafeCall(W.InitializeModules, W)
     -- The plugin API can be called at any point after EllesmereUI's chunk has
     -- run, but the pages read the profile DB, so this waits until InitDB did.

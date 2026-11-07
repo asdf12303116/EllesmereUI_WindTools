@@ -48,6 +48,14 @@ G.combat = {
 		-- the screen, bottom-right area).
 		position = nil,
 	},
+	combatAlert = {
+		-- Mover position saved at account level; written by EllesmereUI
+		-- Unlock Mode through Core\CompatE.lua's E:CreateMover shim.
+		position = nil,
+	},
+	damageMeterLayout = {
+		position = nil,
+	},
 	covenantHelper = {
 		soulbindRules = {
 			characters = {},
@@ -60,6 +68,9 @@ G.misc = {
 		movies = {},
 	},
 	lfgList = {},
+	exitPhaseDiving = {
+		position = nil,
+	},
 	gameBar = {
 		-- Mover position saved at account level so the bar layout is shared
 		-- across characters. Populated by EllesmereUI Unlock Mode via the
@@ -70,13 +81,28 @@ G.misc = {
 
 G.maps = {
 	eventTracker = {},
+	instanceDifficulty = {
+		position = nil,
+	},
+	minimapButtons = {
+		position = nil,
+	},
 }
 
 G.social = {
+	emote = {
+		position = nil,
+	},
 	chatBar = {
 		-- Mover position saved at account level so layout is shared across
 		-- characters. Populated by EllesmereUI Unlock Mode via the
 		-- RegisterUnlockElements API. Nil = use default anchor (above LeftChatPanel).
+		position = nil,
+	},
+}
+
+G.quest = {
+	switchButtons = {
 		position = nil,
 	},
 }
