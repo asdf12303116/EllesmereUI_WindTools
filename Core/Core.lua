@@ -187,7 +187,7 @@ function W:UpdateModules()
 	for _, moduleName in pairs(self.RegisteredModules) do
 		local module = W:GetModule(moduleName)
 		if module.ProfileUpdate then
-			pcall(module.ProfileUpdate, module)
+			xpcall(module.ProfileUpdate, F.Developer.LogDebug, module)
 		end
 	end
 end
