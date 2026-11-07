@@ -46,6 +46,9 @@
 
 ## Codes
 
+- LibAnim
+  - Hydra (as bundled with ElvUI by tukui.org)
+
 - Announcement
   - Venomisto (InstanceResetAnnouncer)
   - Wetxius, Shestak (ShestakUI)
