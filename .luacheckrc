@@ -7,6 +7,7 @@ ignore = {
 globals = {}
 read_globals = {
 	"ElvUI",
+	"EllesmereUI",
 	"WindTools",
 	"101_CutsceneName_Ref",
 	"101_CutsceneName_Ref2",
