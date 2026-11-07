@@ -161,7 +161,7 @@ local function BuildSmartTab(parent, y, cat)
 	local _, h
 	local st = E.db.WT.social.smartTab
 	local stDis = function() return not st.enable end
-	_, h = Widgets:SectionHeader(parent, L("SmartTab"), y); y = y - h
+	_, h = Widgets:SectionHeader(parent, L("Smart Tab"), y); y = y - h
 	-- The sidebar used to carry this switch; the page owns it now that the
 	-- standalone panel is gone. The chat edit hook is installed once at login,
 	-- so turning the module back on only takes effect after a reload.
