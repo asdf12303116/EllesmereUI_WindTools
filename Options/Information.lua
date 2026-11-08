@@ -1,20 +1,21 @@
 local addon = select(2, ...)
 local E = addon[3]
 
-addon.RegisterOptionBuilder("information", function(parent, y, cat)
+-- The version line sits above the first header: it is the page title in
+-- EllesmereUI's own Information pages too, and a header above a single button
+-- only adds a word to read.
+addon.RegisterOptionBuilder("information", function(parent, y)
 	local L = addon.L
-	local MH = function(mod, sub) return addon.MakeHeader(cat, mod, sub) end
 	local Widgets = EllesmereUI.Widgets
 	local _, h
 
-	_, h = Widgets:SectionHeader(parent, MH("WindTools"), y); y = y - h
-
 	local devVersion = addon.GetDevelopmentVersion and addon.GetDevelopmentVersion()
 	if devVersion then
-		_, h = Widgets:Button(parent, L("Development Version: %s"):format(tostring(devVersion)), y, function() end); y = y - h
+		_, h = Widgets:Button(parent, L("Development Version: %s"):format(tostring(devVersion)), y, function() end)
+		y = y - h
 	end
 
-	_, h = Widgets:SectionHeader(parent, MH("Help"), y); y = y - h
+	_, h = Widgets:SectionHeader(parent, "LINKS", y); y = y - h
 
 	_, h = Widgets:Button(parent, "GitHub Repository", y, function()
 		if E.StaticPopup_Show then
@@ -34,7 +35,7 @@ addon.RegisterOptionBuilder("information", function(parent, y, cat)
 		end
 	end); y = y - h
 
-	_, h = Widgets:SectionHeader(parent, MH("Credits"), y); y = y - h
+	_, h = Widgets:SectionHeader(parent, "CREDITS", y); y = y - h
 
 	_, h = Widgets:Button(parent, "Author: fang2hou", y, function() end); y = y - h
 	_, h = Widgets:Button(parent, "Author: XanaHopper", y, function() end); y = y - h

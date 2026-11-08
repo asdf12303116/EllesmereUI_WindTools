@@ -34,16 +34,18 @@ local function UpdateFriendlyNameplateOutline()
 	addon.SafeModuleCall(W.Modules.FriendlyNameplateOutline, "ProfileUpdate")
 end
 
-local function BuildQuickFocus(parent, y, cat)
-	local MH = function(mod, sub) return addon.MakeHeader(cat, mod, sub) end
+local function BuildQuickFocus(parent, y)
 	local Widgets = EllesmereUI.Widgets
 	local _, h
 	local qf = E.private.WT.unitFrames.quickFocus
 	local qfDis = function() return not qf.enable end
-	_, h = Widgets:SectionHeader(parent, MH("Quick Focus"), y); y = y - h
-	_, h = Widgets:Toggle(parent, "Enable", y,
-		DBGet(qf, "enable"), DBSet(qf, "enable", ToggleQuickFocus),
-		"Focus the mouseover unit with a modifier key + mouse button."); y = y - h
+
+	_, h = Widgets:SectionHeader(parent, "QUICK FOCUS", y); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = "Enable",
+		  tooltip = "Focus the mouseover unit with a modifier key + mouse button.",
+		  getValue = DBGet(qf, "enable"), setValue = DBSet(qf, "enable", ToggleQuickFocus) },
+		{ type = "spacer" }); y = y - h
 	_, h = Widgets:DualRow(parent, y,
 		{ type = "dropdown", text = "Modifier Key",
 		  values = MODIFIER_VALUES, order = MODIFIER_ORDER,
@@ -57,20 +59,25 @@ local function BuildQuickFocus(parent, y, cat)
 		  getValue = DBGet(qf, "setMark"), setValue = DBSet(qf, "setMark", UpdateQuickFocus), disabled = qfDis },
 		{ type = "dropdown", text = "Mark",
 		  values = MARK_VALUES, order = MARK_ORDER,
-		  getValue = DBGet(qf, "markNumber"), setValue = DBSet(qf, "markNumber", UpdateQuickFocus), disabled = qfDis }
+		  getValue = DBGet(qf, "markNumber"), setValue = DBSet(qf, "markNumber", UpdateQuickFocus),
+		  disabled = function() return qfDis() or not qf.setMark end }
 	); y = y - h
+
 	return y
 end
 
-local function BuildFriendlyNameplateOutline(parent, y, cat)
-	local MH = function(mod, sub) return addon.MakeHeader(cat, mod, sub) end
+local function BuildFriendlyNameplateOutline(parent, y)
 	local Widgets = EllesmereUI.Widgets
 	local _, h
 	local fn = E.db.WT.unitFrames.friendlyNameplateOutline
-	_, h = Widgets:SectionHeader(parent, MH("Friendly Nameplate Outline"), y); y = y - h
-	_, h = Widgets:Toggle(parent, "Enable", y,
-		DBGet(fn, "enable"), DBSet(fn, "enable", UpdateFriendlyNameplateOutline),
-		"Sync the EllesmereUI friendly nameplate outline style to the system nameplate fonts, and keep friendly nameplates visible in follower dungeons. Requires the EllesmereUI nameplates module with friendly Name Only mode."); y = y - h
+
+	_, h = Widgets:SectionHeader(parent, "FRIENDLY NAMEPLATE OUTLINE", y); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = "Enable",
+		  tooltip = "Sync the EllesmereUI friendly nameplate outline style to the system nameplate fonts, and keep friendly nameplates visible in follower dungeons. Requires the EllesmereUI nameplates module with friendly Name Only mode.",
+		  getValue = DBGet(fn, "enable"), setValue = DBSet(fn, "enable", UpdateFriendlyNameplateOutline) },
+		{ type = "spacer" }); y = y - h
+
 	return y
 end
 
@@ -78,9 +85,8 @@ end
 -- Modules/Load_Modules.xml). Absorb, Role Icon and Name Clip used to be built
 -- here as disabled groups; they are gone instead, so the page offers nothing it
 -- cannot deliver.
-addon.RegisterOptionBuilder("unitFrames", function(parent, y, cat)
-	local Widgets = EllesmereUI.Widgets
-	y = BuildQuickFocus(parent, y, cat)
-	local _, sh = Widgets:Spacer(parent, y, 8); y = y - sh
-	return BuildFriendlyNameplateOutline(parent, y, cat)
+addon.RegisterOptionBuilder("unitFrames", function(parent, y)
+	y = BuildQuickFocus(parent, y)
+	local _, sh = EllesmereUI.Widgets:Spacer(parent, y, 8); y = y - sh
+	return BuildFriendlyNameplateOutline(parent, y)
 end)
