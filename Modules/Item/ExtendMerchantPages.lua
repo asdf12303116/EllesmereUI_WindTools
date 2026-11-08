@@ -1,6 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local EMP = W:NewModule("ExtendMerchantPages", "AceHook-3.0")
-local S = W.Modules.Skins ---@type Skins
+local EMP = W:NewModule("ExtendMerchantPages")
 
 local _G = _G
 local floor = math.floor
@@ -62,8 +61,6 @@ function EMP:SkinButton(index)
 	money:ClearAllPoints()
 	money:Point("BOTTOMLEFT", button, "BOTTOMRIGHT", 3, 0)
 
-	S:HandleMerchantItem(index)
-	S:Proxy("HandleIconBorder", button.IconBorder)
 end
 
 function EMP:MerchantFrame_UpdateMerchantInfo()

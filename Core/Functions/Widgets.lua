@@ -1,8 +1,8 @@
-local F ---@class Functions
-local W, E ---@type WindTools, ElvUI
-W, F, E = unpack((select(2, ...)))
+-- The addon table comes first; this file only needs the function table and the
+-- compatibility layer, so the first slot is skipped rather than bound.
+local F, E = select(2, ...), select(3, ...) ---@type Functions, ElvUI
 
-local S = W.Modules.Skins ---@class Skins
+local EUI = _G.EllesmereUI
 
 local _G = _G
 local type = type
@@ -22,20 +22,19 @@ F.Widgets = {}
 ---@param onClick function? Click handler function (optional)
 ---@return Button button The created button
 local function createButton(parent, text, width, height, onClick)
-	local frame = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-
-	if text then
-		frame:SetText(text)
-	end
+	local frame = CreateFrame("Button", nil, parent)
 
 	frame:Width(width or 100)
 	frame:Height(height or 22)
+	frame:SetScript("OnClick", onClick)
 
-	if onClick then
-		frame:SetScript("OnClick", onClick)
+	-- UIPanelButtonTemplate carries its own chrome, so it has to go before the
+	-- EllesmereUI look is applied over the top of it.
+	if EUI and EUI.MakeStyledButton then
+		EUI.MakeStyledButton(frame, text or "", 12, EUI.WB_COLOURS, onClick)
+	else
+		frame:SetText(text or "")
 	end
-
-	S:Proxy("HandleButton", frame)
 
 	return frame
 end
@@ -60,8 +59,6 @@ local function createCloseButton(parent, size, onClick)
 			parent:Hide()
 		end)
 	end
-
-	S:Proxy("HandleCloseButton", frame)
 
 	return frame
 end
@@ -143,8 +140,6 @@ local function createInput(parent, width, height, onEnterPressed)
 		---Clear focus on Escape key press
 		self:ClearFocus()
 	end)
-
-	S:Proxy("HandleEditBox", frame)
 
 	return frame
 end

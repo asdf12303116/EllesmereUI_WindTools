@@ -1,11 +1,12 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
 	<!-- Only the option files whose modules are actually loaded are listed here.
-	     The rest of the upstream option set (item, announcement, maps, quest,
+	     The rest of the upstream option set (announcement, maps, quest,
 	     tooltips, skins) is left out until those modules are ported, so no page
 	     can be opened that would only show controls with nothing behind them. -->
 	<Script file='Core.lua'/>
 	<Script file='Misc.lua'/>
 	<Script file='ExtraItemBar.lua'/>
+	<Script file='Item.lua'/>
 	<Script file='Combat.lua'/>
 	<Script file='Social.lua'/>
 	<Script file='UnitFrames.lua'/>

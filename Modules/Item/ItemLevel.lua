@@ -1,7 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local IL = W:NewModule("ItemLevel", "AceEvent-3.0", "AceHook-3.0")
-local B = E:GetModule("Bags")
-local LSM = E.Libs.LSM
+local IL = W:NewModule("ItemLevel")
 
 local _G = _G
 local pairs = pairs
@@ -20,13 +18,6 @@ local EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION = EQUIPMENTFLYOUT_FIRST_SPECIAL_LOC
 ---@param text FontString
 ---@param db ProfileDB.item.itemLevel.flyout | ProfileDB.item.itemLevel.scrappingMachine
 local function UpdateFlyoutItemLevelTextStyle(text, db)
-	if db.useBagsFontSetting then
-		text:FontTemplate(LSM:Fetch("font", B.db.itemLevelFont), B.db.itemLevelFontSize, B.db.itemLevelFontOutline)
-		text:ClearAllPoints()
-		text:Point(B.db.itemLevelPosition, B.db.itemLevelxOffset, B.db.itemLevelyOffset)
-		return
-	end
-
 	F.SetFontWithDB(text, db.font)
 	text:ClearAllPoints()
 	text:Point("BOTTOMRIGHT", db.font.xOffset, db.font.yOffset)

@@ -45,8 +45,8 @@ local MODULES = {
 	{
 		key = "Items",
 		title = "Items",
-		description = "The extra action bars shown next to the Blizzard bars.",
-		pages = { "Extra Items Bar" },
+		description = "Extra action bars, loot, trade, contacts, inspect, and item level.",
+		pages = { "Extra Items Bar", "Loot & Trade", "Display", "Inspect" },
 	},
 	{
 		key = "Combat",

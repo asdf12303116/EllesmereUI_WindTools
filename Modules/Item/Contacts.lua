@@ -1,9 +1,11 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local CT = W:NewModule("Contacts", "AceHook-3.0")
-local S = W.Modules.Skins ---@type Skins
-local ES = E.Skins
+local CT = W:NewModule("Contacts")
 local MF = W.Modules.MoveFrames ---@type MoveFrames
 local C = W.Utilities.Color
+
+-- ElvUI kept these on its Skins module; they are just quarter turn rotations.
+local ARROW_ROTATION_LEFT = 1.57
+local ARROW_ROTATION_RIGHT = -1.57
 
 local _G = _G
 local floor = floor
@@ -160,8 +162,6 @@ function CT:ConstructFrame()
 	frame:CreateBackdrop("Transparent")
 	frame:EnableMouse(true)
 
-	S:CreateShadowModule(frame.backdrop)
-	S:MerathilisUISkin(frame.backdrop)
 	MF:InternalHandle(frame, "MailFrame")
 
 	self.frame = frame
@@ -312,7 +312,6 @@ function CT:ConstructNameButtons()
 			GameTooltip:Hide()
 		end)
 
-		S:Proxy("HandleButton", button)
 
 		button:Hide()
 		self.frame.nameButtons[i] = button
@@ -323,8 +322,8 @@ function CT:ConstructPageController()
 	local pagePrevButton = CreateFrame("Button", "WTContactsPagePrevButton", self.frame, "SecureActionButtonTemplate")
 	pagePrevButton:Size(14)
 	SetButtonTexture(pagePrevButton, E.Media.Textures.ArrowUp)
-	pagePrevButton.normalTex:SetRotation(ES.ArrowRotation.left)
-	pagePrevButton.hoverTex:SetRotation(ES.ArrowRotation.left)
+	pagePrevButton.normalTex:SetRotation(ARROW_ROTATION_LEFT)
+	pagePrevButton.hoverTex:SetRotation(ARROW_ROTATION_LEFT)
 	pagePrevButton:Point("BOTTOMLEFT", self.frame, "BOTTOMLEFT", 8, 8)
 	pagePrevButton:RegisterForClicks("AnyUp")
 
@@ -338,8 +337,8 @@ function CT:ConstructPageController()
 	local pageNextButton = CreateFrame("Button", "WTContactsPageNextButton", self.frame, "SecureActionButtonTemplate")
 	pageNextButton:Size(14)
 	SetButtonTexture(pageNextButton, E.Media.Textures.ArrowUp)
-	pageNextButton.normalTex:SetRotation(ES.ArrowRotation.right)
-	pageNextButton.hoverTex:SetRotation(ES.ArrowRotation.right)
+	pageNextButton.normalTex:SetRotation(ARROW_ROTATION_RIGHT)
+	pageNextButton.hoverTex:SetRotation(ARROW_ROTATION_RIGHT)
 	pageNextButton:Point("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -8, 8)
 	pageNextButton:RegisterForClicks("AnyUp")
 
@@ -365,7 +364,6 @@ function CT:ConstructPageController()
 		end
 	end)
 
-	S:Proxy("HandleSliderFrame", slider)
 
 	local pageIndicater = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	pageIndicater:Point("BOTTOM", slider, "TOP", 0, 6)

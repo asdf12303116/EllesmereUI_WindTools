@@ -560,7 +560,6 @@ P.item = {
 		---@class ProfileDB.item.itemLevel.flyout
 		flyout = {
 			enable = true,
-			useBagsFontSetting = false,
 			qualityColor = true,
 			font = {
 				name = F.GetCompatibleFont("Montserrat"),
@@ -574,7 +573,6 @@ P.item = {
 		---@class ProfileDB.item.itemLevel.scrappingMachine
 		scrappingMachine = {
 			enable = true,
-			useBagsFontSetting = false,
 			qualityColor = true,
 			font = {
 				name = F.GetCompatibleFont("Montserrat"),

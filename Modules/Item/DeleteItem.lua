@@ -1,6 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local DI = W:NewModule("DeleteItem", "AceEvent-3.0")
-local S = W.Modules.Skins ---@type Skins
+local DI = W:NewModule("DeleteItem")
 local C = W.Utilities.Color
 
 local _G = _G
@@ -68,7 +67,6 @@ function DI:ShowFillInButton(dialog)
 	if not self.fillInButton then
 		local button = CreateFrame("Button", "MyButton", E.UIParent, "UIPanelButtonTemplate")
 		button:SetFrameStrata("TOOLTIP")
-		S:Proxy("HandleButton", button)
 		self.fillInButton = button
 	end
 

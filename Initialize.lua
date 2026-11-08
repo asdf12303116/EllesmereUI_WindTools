@@ -173,6 +173,7 @@ local CATEGORY_TITLES = {
     information    = "Information",
     misc           = "Misc",
     extraItemsBar  = "Extra Items Bar",
+    item           = "Item",
     combat         = "Combat",
     social         = "Social",
     unitFrames     = "Unit Frames",
@@ -195,6 +196,12 @@ local PAGE_GROUPS = {{
     page = "Game Bar",          categories = {"misc"}
 }, {
     page = "Extra Items Bar",   categories = {"extraItemsBar"}
+}, {
+    page = "Loot & Trade",      categories = {"item"}
+}, {
+    page = "Display",           categories = {"item"}
+}, {
+    page = "Inspect",           categories = {"item"}
 }, {
     page = "Combat",            categories = {"combat"}
 }, {

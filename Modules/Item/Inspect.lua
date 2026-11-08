@@ -1,7 +1,6 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local I = W:NewModule("Inspect", "AceEvent-3.0", "AceHook-3.0") ---@class Inspect: AceModule, AceEvent-3.0, AceHook-3.0
+local I = W:NewModule("Inspect") ---@class Inspect : AceModule
 local C = W.Utilities.Color
-local S = W.Modules.Skins ---@type Skins
 local MF = W.Modules.MoveFrames ---@type MoveFrames
 local async = W.Utilities.Async
 local EnchantLib = E.Libs.WTItemEnchant ---@type LibItemEnchantWT
@@ -784,12 +783,9 @@ function I:CreatePanel(parent)
 	frame:Point("TOPLEFT", parent, "TOPRIGHT", 3, 0)
 	frame:Point("BOTTOMLEFT", parent, "BOTTOMRIGHT", 3, 0)
 	frame:SetTemplate("Transparent")
-	S:CreateShadowModule(frame)
-	S:MerathilisUISkin(frame)
 
 	frame.CloseButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton, BackdropTemplate") --[[@as Button]]
 	frame.CloseButton:Point("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
-	S:Proxy("HandleCloseButton", frame.CloseButton)
 	frame.CloseButton:SetScript("OnClick", function(_)
 		frame:Hide()
 	end)
@@ -1148,8 +1144,6 @@ function I:CreateStatsComparePanel(parent)
 	frame:SetFrameLevel(0)
 	frame:Point("TOPLEFT", parent, "TOPRIGHT", 3, 0)
 	frame:SetTemplate("Transparent")
-	S:CreateShadowModule(frame)
-	S:MerathilisUISkin(frame)
 
 	frame.rows = {}
 	frame.separators = {}
