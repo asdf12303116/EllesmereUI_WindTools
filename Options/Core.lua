@@ -869,6 +869,39 @@ do
 	end
 end
 
+-- Section headers in this port follow the EllesmereUI layout: one uppercase
+-- word per section, and the per-slice controls that used to have a header of
+-- their own (fonts, offsets, colours) collapse into a cog on the row that owns
+-- them. EllesmereUI.BuildCogPopup is the popup half; the button half is small
+-- enough to keep here rather than in every options file that needs one.
+function addon.AttachCog(rgn, popupTitle, popupRows)
+	if not rgn or not EllesmereUI or not EllesmereUI.BuildCogPopup then
+		return
+	end
+
+	local _, cogShow = EllesmereUI.BuildCogPopup({ title = popupTitle, rows = popupRows })
+	if not cogShow then
+		return
+	end
+
+	local cogBtn = CreateFrame("Button", nil, rgn)
+	cogBtn:SetSize(26, 26)
+	cogBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control or rgn, "LEFT", -8, 0)
+	rgn._lastInline = cogBtn
+	cogBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
+	cogBtn:SetAlpha(0.4)
+
+	local cogTex = cogBtn:CreateTexture(nil, "OVERLAY")
+	cogTex:SetAllPoints()
+	cogTex:SetTexture(EllesmereUI.COGS_ICON)
+
+	cogBtn:SetScript("OnEnter", function(self) self:SetAlpha(0.7) end)
+	cogBtn:SetScript("OnLeave", function(self) self:SetAlpha(0.4) end)
+	cogBtn:SetScript("OnClick", function(self) cogShow(self) end)
+
+	return cogBtn
+end
+
 do
 	local t = {}
 	function addon.MakeChannelValues(...)
