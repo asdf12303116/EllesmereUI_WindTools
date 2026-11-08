@@ -212,6 +212,14 @@ local PAGE_GROUPS = {{
 }, {
     page = "Smart Tab",         categories = {"social"}
 }, {
+    page = "Chat Link",         categories = {"social"}
+}, {
+    page = "Emote",             categories = {"social"}
+}, {
+    page = "Friend List",       categories = {"social"}
+}, {
+    page = "Context Menu",      categories = {"social"}
+}, {
     page = "Unit Frames",       categories = {"unitFrames"}
 }, {
     page = "Advanced",          categories = {"advanced"}

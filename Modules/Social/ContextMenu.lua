@@ -1,5 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local CM = W:NewModule("ContextMenu", "AceHook-3.0")
+local CM = W:NewModule("ContextMenu") ---@class ContextMenu : AceModule
 
 local _G = _G
 local format = format
@@ -286,7 +286,24 @@ CM.Features = {
 
 			if name and slug then
 				local link = format("%s/%s/%s", CM:GetArmoryBaseURL(), slug, name)
-				E:StaticPopup_Show("ELVUI_EDITBOX", nil, nil, link)
+				-- ElvUI had a shared copy box on its popup table. The panel owns one
+				-- now, and it can start with the text selected so a single Ctrl+C is
+				-- enough.
+				if EllesmereUI.ShowInputPopup then
+					EllesmereUI:ShowInputPopup({
+						title = L["Armory"],
+						initialText = link,
+						selectText = true,
+						hideCancel = true,
+						confirmText = L["Copy"],
+						onConfirm = function(text)
+							-- Both supported clients expose the global, not a C_ table.
+							if CopyToClipboard then
+								CopyToClipboard(text)
+							end
+						end,
+					})
+				end
 			else
 				CM:Log("debug", "Cannot get the armory link.")
 			end

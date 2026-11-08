@@ -1,5 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local FL = W:NewModule("FriendList", "AceHook-3.0")
+local FL = W:NewModule("FriendList") ---@class FriendList : AceModule
 local C = W.Utilities.Color
 
 local _G = _G
@@ -569,9 +569,16 @@ function FL:ProfileUpdate()
 	end
 
 	FriendsFrame_Update()
-	_G.RecentAlliesFrame.List.ScrollBox:ForEachFrame(function(button)
-		self:UpdateRecentAllyButton(button)
-	end)
+
+	-- Initialize only wires the recent allies list when the frame exists, so the
+	-- refresh has to survive a client that never built it.
+	local recentList = _G.RecentAlliesFrame and _G.RecentAlliesFrame.List
+	local scrollBox = recentList and recentList.ScrollBox
+	if scrollBox then
+		scrollBox:ForEachFrame(function(button)
+			self:UpdateRecentAllyButton(button)
+		end)
+	end
 end
 
 W:RegisterModule(FL:GetName())

@@ -1,6 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local CE = W:NewModule("Emote", "AceHook-3.0", "AceTimer-3.0")
-local S = W.Modules.Skins ---@type Skins
+local CE = W:NewModule("Emote") ---@class Emote : AceModule
 
 local _G = _G
 local ceil = ceil
@@ -126,9 +125,7 @@ function CE:CreateInterface()
 	_G.WTCustomEmoteFrameDialogBG:Hide()
 	frame:StripTextures()
 	frame:CreateBackdrop("Transparent")
-	S:CreateShadowModule(frame.backdrop)
-	S:MerathilisUISkin(frame.backdrop)
-	S:Proxy("HandleCloseButton", _G.WTCustomEmoteFrameClose)
+	frame.backdrop:CreateShadow()
 
 	frame:Width(column * (width + space) + 24)
 	frame:SetClampedToScreen(true)
@@ -201,10 +198,17 @@ function CE:CreateInterface()
 	frame:Hide()
 
 	-- Enter { to open the emote frame
+	-- The module object only carries plain hooks, and a script hook cannot be
+	-- taken back on this shell, so each edit box is remembered and wired once.
+	self.hookedEditBoxes = self.hookedEditBoxes or {}
 	for _, frameName in ipairs(_G.CHAT_FRAMES) do
 		local chat = _G[frameName]
-		if chat and chat.editBox then
-			self:SecureHookScript(chat.editBox, "OnTextChanged", "ChatEdit_OnTextChanged")
+		local editBox = chat and chat.editBox
+		if editBox and not self.hookedEditBoxes[editBox] then
+			self.hookedEditBoxes[editBox] = true
+			editBox:HookScript("OnTextChanged", function(box, userInput)
+				self:ChatEdit_OnTextChanged(box, userInput)
+			end)
 		end
 	end
 

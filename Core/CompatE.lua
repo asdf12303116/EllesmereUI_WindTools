@@ -254,7 +254,12 @@ local function CreateCompatE()
 			},
 		},
 		global = {
-			general = {},
+			general = {
+				-- ElvUI kept the client locale on this table and a few ported
+				-- modules read it to pick Chinese-only spacing rules. Reading an
+				-- absent field would silently take the western branch.
+				locale = GetLocale(),
+			},
 		},
 		private = {},
 		Libs = {},

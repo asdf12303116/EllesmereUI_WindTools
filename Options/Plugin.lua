@@ -63,8 +63,8 @@ local MODULES = {
 	{
 		key = "Social",
 		title = "Social",
-		description = "Chat bar and chat tab behaviour.",
-		pages = { "Chat Bar", "Smart Tab" },
+		description = "Chat bar, chat tab, links, emotes, friend list, and context menu.",
+		pages = { "Chat Bar", "Smart Tab", "Chat Link", "Emote", "Friend List", "Context Menu" },
 	},
 	{
 		-- No space in the key: it has to match ^%a[%w_%-]*$. The title carries
