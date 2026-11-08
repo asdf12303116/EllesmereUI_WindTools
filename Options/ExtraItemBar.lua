@@ -1,12 +1,10 @@
 local addon = select(2, ...)
 local W = addon[1]
 local E = addon[3]
+local L = addon.L
 local DBGet = addon.DBGet
 local DBSet = addon.DBSet
-local DBGet2 = addon.DBGet2
-local DBSet2 = addon.DBSet2
 local SafeModuleCall = addon.SafeModuleCall
-local FontSection = addon.FontSection
 local C_Item_GetItemInfo = _G.C_Item.GetItemInfo
 
 
@@ -84,26 +82,8 @@ local function SetPreviewTexCoords(tex, width, height)
 	tex:SetTexCoord(left, right, top, bottom)
 end
 
-local function AttachCog(rgn, popupTitle, popupRows)
-	if not rgn or not EllesmereUI.BuildCogPopup then return end
-	local _, cogShow = EllesmereUI.BuildCogPopup({ title = popupTitle, rows = popupRows })
-	local cogBtn = CreateFrame("Button", nil, rgn)
-	cogBtn:SetSize(26, 26)
-	cogBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control or rgn, "LEFT", -8, 0)
-	rgn._lastInline = cogBtn
-	cogBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-	cogBtn:SetAlpha(0.4)
-	local cogTex = cogBtn:CreateTexture(nil, "OVERLAY")
-	cogTex:SetAllPoints()
-	cogTex:SetTexture(EllesmereUI.COGS_ICON)
-	cogBtn:SetScript("OnEnter", function(self) self:SetAlpha(0.7) end)
-	cogBtn:SetScript("OnLeave", function(self) self:SetAlpha(0.4) end)
-	cogBtn:SetScript("OnClick", function(self) cogShow(self) end)
-end
-
-addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
+addon.RegisterOptionBuilder("extraItemsBar", function(parent, y)
 	local Widgets = EllesmereUI.Widgets
-	local MH = function(mod, sub) return addon.MakeHeader(cat, mod, sub) end
 	local _, h
 	local db = E.db.WT.item.extraItemsBar
 	local selectedBar = _selectedBar
@@ -297,12 +277,11 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 	-- =========================================================================
 	local _headerBuilder
 	_headerBuilder = function(hdr, hdrW)
-		local PAD = EllesmereUI.CONTENT_PAD or 20
 		local fy = -18
 
 		local DD_H = 32
 		local ddW = 200
-		local ddBtn, ddLbl = EllesmereUI.BuildDropdownControl(
+		local ddBtn = EllesmereUI.BuildDropdownControl(
 			hdr, ddW, hdr:GetFrameLevel() + 5,
 			BAR_LABELS, BAR_ORDER,
 			function() return selectedBar end,
@@ -332,15 +311,17 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 	local parseItemID = function(v) local id = tonumber(v); if id and id > 0 then return id end end
 	local ebDis = function() return not db.enable end
 
-	_, h = Widgets:SectionHeader(parent, MH("General"), y); y = y - h
+	_, h = Widgets:SectionHeader(parent, L["GENERAL"], y); y = y - h
 	-- The sidebar used to carry this switch; the page owns it now that the
 	-- standalone panel is gone.
-	_, h = Widgets:Toggle(parent, "Enable", y,
-		DBGet(db, "enable"), DBSet(db, "enable", updateBars),
-		"Toggle the extra items bar module."); y = y - h
-	_, h = Widgets:Toggle(parent, "No Quantum Items", y,
-		DBGet(db, "noQuantumItems"), DBSet(db, "noQuantumItems", updateBars),
-		"Automatically blacklist the quantum items."); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type="toggle", text="Enable",
+		  getValue=DBGet(db, "enable"), setValue=DBSet(db, "enable", updateBars),
+		  tooltip="Toggle the extra items bar module." },
+		{ type="toggle", text="No Quantum Items",
+		  getValue=DBGet(db, "noQuantumItems"), setValue=DBSet(db, "noQuantumItems", updateBars),
+		  tooltip="Automatically blacklist the quantum items.", disabled=ebDis }
+	); y = y - h
 	local function itemSummary(list, isArray)
 		local names = {}
 		if isArray then
@@ -405,7 +386,7 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 	-- =========================================================================
 	--  LAYOUT
 	-- =========================================================================
-	_, h = Widgets:SectionHeader(parent, MH("Layout"), y); y = y - h
+	_, h = Widgets:SectionHeader(parent, L["LAYOUT"], y); y = y - h
 	do
 		local barDis = function() return not db.enable or not SB().enable end
 		local lr0
@@ -516,7 +497,7 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 	-- =========================================================================
 	--  VISIBILITY
 	-- =========================================================================
-	_, h = Widgets:SectionHeader(parent, MH("Visibility"), y); y = y - h
+	_, h = Widgets:SectionHeader(parent, L["VISIBILITY"], y); y = y - h
 	do
 		local barDis = function() return not db.enable or not SB().enable end
 		local vr1
@@ -532,7 +513,7 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 			isSynced=function() local vg=SB().globalFade; local vm=SB().mouseOver; for i=1,5 do if db["bar"..i].enable and (db["bar"..i].globalFade~=vg or db["bar"..i].mouseOver~=vm) then return false end end; return true end,
 			multiApply={ elementKeys={1,2,3,4,5}, elementLabels={[1]="Bar 1",[2]="Bar 2",[3]="Bar 3",[4]="Bar 4",[5]="Bar 5"}, getCurrentKey=function() return selectedBar end, onApply=function(keys) for _,i in ipairs(keys) do local d=db["bar"..i]; if d then d.globalFade=SB().globalFade; d.mouseOver=SB().mouseOver end end; updateBars(); addon.RefreshOptions() end },
 		}) end
-		AttachCog(vr1 and vr1._rightRegion, "Fade Settings", {
+		addon.AttachCog(vr1 and vr1._rightRegion, "Fade Settings", {
 			{ type="slider", label="Fade Time", min=0, max=2, step=0.01,
 			  get=function() return SB().fadeTime end,
 			  set=function(v) SB().fadeTime = v; updateBars() end },
@@ -568,7 +549,7 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 	-- =========================================================================
 	--  TEXT & FONTS  (gear popups)
 	-- =========================================================================
-	_, h = Widgets:SectionHeader(parent, MH("Text & Fonts"), y); y = y - h
+	_, h = Widgets:SectionHeader(parent, L["BAR TEXT"], y); y = y - h
 	do
 		local barDis = function() return not db.enable or not SB().enable end
 		local fontValues, fontOrder = EllesmereUI.BuildFontDropdownData()
@@ -603,8 +584,8 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 			{ type="toggle", text="Bind Text",
 			  getValue=function() return SB().enable end, setValue=function() end, disabled=barDis }
 		); y = y - h
-		AttachCog(fr1 and fr1._leftRegion, "Count Text", fontCogRows("countFont"))
-		AttachCog(fr1 and fr1._rightRegion, "Bind Text", fontCogRows("bindFont"))
+		addon.AttachCog(fr1 and fr1._leftRegion, "Count Text", fontCogRows("countFont"))
+		addon.AttachCog(fr1 and fr1._rightRegion, "Bind Text", fontCogRows("bindFont"))
 		if fr1 and fr1._leftRegion then EllesmereUI.BuildSyncIcon({
 			region=fr1._leftRegion, tooltip="Apply fonts to all Bars",
 			onClick=function() for i=1,5 do local d=db["bar"..i]; if d then d.countFont=DeepCopy(SB().countFont); d.bindFont=DeepCopy(SB().bindFont) end end; updateBars(); addon.RefreshOptions() end,
@@ -618,7 +599,7 @@ addon.RegisterOptionBuilder("extraItemsBar", function(parent, y, cat)
 			  getValue=function() return SB().enable end, setValue=function() end, disabled=barDis },
 			{ type="spacer" }
 		); y = y - h
-		AttachCog(fr2 and fr2._leftRegion, "Quality Tier", {
+		addon.AttachCog(fr2 and fr2._leftRegion, "Quality Tier", {
 			{ type="slider", label="Size", min=5, max=40, step=1,
 			  get=function() return SB().qualityTier.size end,
 			  set=function(v) SB().qualityTier.size = v; updateBars() end },
