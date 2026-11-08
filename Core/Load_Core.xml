@@ -3,4 +3,5 @@
 	<Include file='Utilities\Load_Utilities.xml'/>
 	<Script file='Core.lua'/>
 	<Script file='Commands.lua'/>
+	<Script file='KeystoneInfo.lua'/>
 </Ui>

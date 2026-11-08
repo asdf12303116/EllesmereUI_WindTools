@@ -6,6 +6,7 @@ if not EUI or not EUI.Lite then
 end
 
 local tinsert = tinsert
+local tremove = tremove
 local type = type
 local pairs = pairs
 local error = error
@@ -34,6 +35,17 @@ local function DispatchMethod(owner, handler, ...)
 	end
 end
 
+local messageSubscribers = {}
+
+local function FindSubscription(list, owner, callback)
+	for index = 1, #list do
+		local entry = list[index]
+		if entry.owner == owner and entry.callback == callback then
+			return index
+		end
+	end
+end
+
 local function RegisterChatCommand(prefix, keys, func)
 	if type(keys) ~= "table" then
 		keys = { keys }
@@ -53,6 +65,78 @@ end
 local function AddCommonMethods(target)
 	target.RegisterEvent = EUI.Lite._RegisterEvent
 	target.UnregisterEvent = EUI.Lite._UnregisterEvent
+
+	-- ElvUI's own addon object carries AceEvent's message bus, and a few ported
+	-- modules (Announcement asks for WINDTOOLS_PLAYER_KEYSTONE_CHANGED) still
+	-- publish through it. EllesmereUI's Lite addon has events only, so the bus
+	-- lives here as a plain callback table keyed by message name.
+	function target:RegisterMessage(message, callback)
+		if type(message) ~= "string" then
+			return
+		end
+
+		-- AceEvent resolves a missing callback to the method named after the
+		-- message, and the ported modules rely on that shorthand.
+		if callback == nil then
+			callback = message
+		end
+
+		if type(callback) ~= "string" and type(callback) ~= "function" then
+			return
+		end
+
+		local list = messageSubscribers[message]
+		if not list then
+			list = {}
+			messageSubscribers[message] = list
+		end
+
+		if FindSubscription(list, self, callback) then
+			return
+		end
+
+		list[#list + 1] = { owner = self, callback = callback }
+	end
+
+	function target:UnregisterMessage(message, callback)
+		local list = messageSubscribers[message]
+		if not list then
+			return
+		end
+
+		if callback == nil then
+			callback = message
+		end
+
+		for index = #list, 1, -1 do
+			local entry = list[index]
+			if entry.owner == self and entry.callback == callback then
+				tremove(list, index)
+			end
+		end
+
+		if #list == 0 then
+			messageSubscribers[message] = nil
+		end
+	end
+
+	function target:SendMessage(message, ...)
+		local list = messageSubscribers[message]
+		if not list then
+			return
+		end
+
+		-- Copy first: a handler may subscribe or unsubscribe while we iterate.
+		local snapshot = {}
+		for index = 1, #list do
+			snapshot[index] = list[index]
+		end
+
+		for index = 1, #snapshot do
+			local entry = snapshot[index]
+			DispatchMethod(entry.owner, entry.callback, message, ...)
+		end
+	end
 
 	function target:GetName()
 		return self.name

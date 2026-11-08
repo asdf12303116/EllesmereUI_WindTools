@@ -55,6 +55,12 @@ local MODULES = {
 		pages = { "Combat" },
 	},
 	{
+		key = "Announcement",
+		title = "Announcement",
+		description = "Quest progress, utility spells, resets, and keystone messages.",
+		pages = { "Announcement" },
+	},
+	{
 		key = "Social",
 		title = "Social",
 		description = "Chat bar and chat tab behaviour.",
@@ -192,6 +198,7 @@ local RESET_SLICES = {
 	General = { { "profile", "misc" }, { "global", "core" }, { "global", "developer" } },
 	Items = { { "profile", "item" }, { "private", "item" }, { "global", "item" } },
 	Combat = { { "profile", "combat" }, { "private", "combat" } },
+	Announcement = { { "profile", "announcement" } },
 	Social = { { "profile", "social" }, { "private", "social" }, { "global", "social" } },
 	UITweaks = {
 		{ "profile", "unitFrames" }, { "private", "unitFrames" },

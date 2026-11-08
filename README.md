@@ -29,7 +29,7 @@
 | Maps (Super Tracker, Minimap Buttons, Rectangle Minimap, World Map, Instance Difficulty, Event Tracker) | ❌ Not ported | |
 | Quest (Objective Tracker, Turn In, Switch Buttons) | ❌ Not ported | |
 | Social (Chat Link, Chat Text, Context Menu, Emote, Friend List) | ❌ Not ported | |
-| Announcement | ❌ Not ported | |
+| Announcement (Quest, Utility, Custom, Goodbye, Reset Instance, Keystone) | ✅ Done | Quest progress, utility spell use, custom spell messages, dungeon goodbye, reset and difficulty messages, and !keys replies |
 | Tooltip (Progression, Keystone, Group Info, Objective Progress) | ❌ Not ported | |
 | Unit Frames (Friendly Nameplate Outline) | ✅ Done | Sync Ellesmere nameplate outline to system fonts; follower-dungeon friendly plates (ported from EUI_Kogotool) |
 | Unit Frames (Quick Focus) | ✅ Done | Modifier-click focus with optional target marking |

@@ -8,6 +8,7 @@
 	<Script file='ExtraItemBar.lua'/>
 	<Script file='Item.lua'/>
 	<Script file='Combat.lua'/>
+	<Script file='Announcement.lua'/>
 	<Script file='Social.lua'/>
 	<Script file='UnitFrames.lua'/>
 	<Script file='Advanced.lua'/>

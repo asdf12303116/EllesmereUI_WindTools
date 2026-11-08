@@ -1,6 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local A = W:NewModule("Announcement", "AceEvent-3.0") ---@class Announcement : AceModule, AceEvent-3.0
-local ChatThrottleLib = _G.ChatThrottleLib
+local A = W:NewModule("Announcement") ---@class Announcement : AceModule, AceEvent-3.0
 
 local _G = _G
 
@@ -78,9 +77,12 @@ function A:SendMessage(text, channel, raidWarning, whisperTarget)
 		return
 	end
 
+	-- WindTools sent everything through ChatThrottleLib, which ElvUI ships but
+	-- this shell has no copy of. C_ChatInfo is the modern call and exists on
+	-- both supported clients; chat is already rate limited by the client.
 	if channel == "WHISPER" then
 		if whisperTarget then
-			ChatThrottleLib:SendChatMessage("NORMAL", "WT", text, channel, nil, whisperTarget)
+			C_ChatInfo.SendChatMessage(text, channel, nil, whisperTarget)
 		end
 		return
 	end
@@ -100,7 +102,7 @@ function A:SendMessage(text, channel, raidWarning, whisperTarget)
 	end
 
 	if self:CheckBeforeSend(text, channel) then
-		ChatThrottleLib:SendChatMessage("NORMAL", "WT", text, channel)
+		C_ChatInfo.SendChatMessage(text, channel)
 	end
 end
 
@@ -149,11 +151,11 @@ function A:ProfileUpdate()
 	end
 
 	for _, event in pairs(self.EventList) do
-		A:UnregisterEvent(event)
+		self:UnregisterEvent(event)
 	end
 
 	for _, message in pairs(self.MessageList) do
-		A:UnregisterMessage(message)
+		self:UnregisterMessage(message)
 	end
 
 	self.initialized = false

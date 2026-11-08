@@ -96,7 +96,9 @@ function KI:CheckPlayerKeystone(skipEmit)
 			self:SendMessage("WINDTOOLS_PLAYER_KEYSTONE_CHANGED", mapID, level, link)
 		end
 
-		KS.Request("GUILD")
+		if KS and KS.Request then
+			KS.Request("GUILD")
+		end
 	end
 
 	self.PlayerKeystone.mapID, self.PlayerKeystone.level = mapID, level
@@ -113,21 +115,30 @@ function KI.RequestData()
 		return
 	end
 
-	if not OR.RequestKeystoneDataFromRaid() then
-		if IsInGroup(LE_PARTY_CATEGORY_HOME) then
-			KS.Request("PARTY")
+	-- LibOpenRaid powers the raid/party broadcast and LibKeystone the party
+	-- reply. Neither is guaranteed: LibKeystone only loads on live, and a
+	-- missing library must not break the whole module.
+	if OR and OR.RequestKeystoneDataFromRaid then
+		if not OR.RequestKeystoneDataFromRaid() then
+			if IsInGroup(LE_PARTY_CATEGORY_HOME) and KS and KS.Request then
+				KS.Request("PARTY")
+			end
+			OR.RequestKeystoneDataFromParty()
 		end
-		OR.RequestKeystoneDataFromParty()
 	end
 end
 
-KS.Register(KI, function(keyLevel, keyChallengeMapID, playerRating, sender)
+local function OnLibKeystoneReply(keyLevel, keyChallengeMapID, playerRating, sender)
 	KI.LibKeystoneInfo[sender] = {
 		level = keyLevel,
 		challengeMapID = keyChallengeMapID,
 		rating = playerRating,
 	}
-end)
+end
+
+if KS and KS.Register then
+	KS.Register(KI, OnLibKeystoneReply)
+end
 
 ---@param unit UnitToken
 ---@return KeystoneInfoData?

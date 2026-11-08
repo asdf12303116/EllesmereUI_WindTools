@@ -1,6 +1,11 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
 local A = W:GetModule("Announcement") ---@class Announcement
-local QP = W:GetModule("QuestProgress") ---@class QuestProgress
+-- The Quest group owns QuestProgress and loads independently of this one, so
+-- the handle is resolved on demand instead of at load time: capturing nil
+-- here would silently disable quest announcing for the whole session.
+local function GetQuestProgress()
+	return W:GetModule("QuestProgress", true) ---@type QuestProgress
+end
 
 local UnitLevel = UnitLevel
 
@@ -25,7 +30,8 @@ function A:AnnounceQuestProgress(eventType, context)
 	local db = self.db.quest
 
 	-- Check if paused (controlled by SwitchButtons module)
-	if E.db.WT.quest.switchButtons.enable and db.paused then
+	local questDB = E.db.WT.quest
+	if questDB and questDB.switchButtons and questDB.switchButtons.enable and db.paused then
 		return
 	end
 
@@ -57,6 +63,11 @@ function A:AnnounceQuestProgress(eventType, context)
 	end
 
 	-- Render message using template and contexts
+	local QP = GetQuestProgress()
+	if not QP or not QP.RenderTemplate then
+		return
+	end
+
 	local message = QP:RenderTemplate(db.template, context)
 
 	if message and message ~= "" then

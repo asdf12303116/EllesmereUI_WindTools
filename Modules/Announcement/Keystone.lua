@@ -1,6 +1,9 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
 local A = W:GetModule("Announcement") ---@class Announcement
-local KI = W:GetModule("KeystoneInfo") ---@class KeystoneInfo
+-- Resolved on demand so a load-order change cannot capture nil.
+local function GetKeystoneInfo()
+	return W:GetModule("KeystoneInfo", true) ---@type KeystoneInfo
+end
 
 local gsub = gsub
 local strlower = strlower
@@ -34,7 +37,8 @@ function A:KeystoneLink(event, text)
 		channel = "GUILD"
 	end
 
-	if channel then
+	local KI = GetKeystoneInfo()
+	if channel and KI then
 		local link = KI:GetPlayerKeystoneLink()
 		if link then
 			self:SendMessage(link, channel)

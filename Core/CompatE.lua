@@ -448,6 +448,7 @@ local function CreateCompatE()
 	E.Libs.LSM = LibStub and LibStub:GetLibrary("LibSharedMedia-3.0", true)
 	E.Libs.Deflate = LibStub and LibStub:GetLibrary("LibDeflate", true)
 	E.Libs.Keystone = LibStub and LibStub:GetLibrary("LibKeystone", true)
+	E.Libs.OpenRaid = LibStub and LibStub:GetLibrary("LibOpenRaid-1.0", true)
 
 	-----------------------------------------------------------------------
 	--  ElvUI utility shims

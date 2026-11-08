@@ -175,6 +175,7 @@ local CATEGORY_TITLES = {
     extraItemsBar  = "Extra Items Bar",
     item           = "Item",
     combat         = "Combat",
+    announcement   = "Announcement",
     social         = "Social",
     unitFrames     = "Unit Frames",
     advanced       = "Advanced",
@@ -204,6 +205,8 @@ local PAGE_GROUPS = {{
     page = "Inspect",           categories = {"item"}
 }, {
     page = "Combat",            categories = {"combat"}
+}, {
+    page = "Announcement",      categories = {"announcement"}
 }, {
     page = "Chat Bar",          categories = {"social"}
 }, {
