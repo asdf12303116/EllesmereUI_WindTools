@@ -8,6 +8,7 @@ local DBGet2 = addon.DBGet2
 local DBSet2 = addon.DBSet2
 local L = addon.L
 local SafeModuleCall = addon.SafeModuleCall
+local PromptReload = addon.PromptReload
 local CVarGetBool = addon.CVarGetBool
 local CVarSetBool = addon.CVarSetBool
 local CVarGetNum = addon.CVarGetNum
@@ -138,11 +139,10 @@ local BUTTON_SLOT_TOOLTIP = "Pick the action for this slot. "
 local TOOLTIP_ANCHOR_VALUES = { ANCHOR_TOP = "TOP", ANCHOR_BOTTOM = "BOTTOM" }
 local TOOLTIP_ANCHOR_ORDER = { "ANCHOR_TOP", "ANCHOR_BOTTOM" }
 
--- The category still covers two pages: the CVars editor belongs to General and
--- the game bar to its own page. Everything else this file used to build belongs
--- to modules that are not loaded (Move Frames, Mute, LFG List, Spell Activation
--- Alert, Keybind Alias), so those sections are gone rather than greyed out: a
--- control with no module behind it would only lie about what the addon does.
+-- The category covers two pages: the game bar has its own page, and everything
+-- else lands on General, which is where the misc module switches and the CVars
+-- editor live. Keybind Alias is still absent on purpose: it hooks ElvUI's action
+-- bar internals, and this addon does not load those.
 addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 	local Widgets = EllesmereUI.Widgets
 	local _, h
@@ -374,9 +374,282 @@ addon.RegisterOptionBuilder("misc", function(parent, y, cat, subPage)
 		return y
 	end
 
-	-- General page: the CVars editor is the only part of this file with a real
-	-- backend, because it writes client CVars rather than addon module state.
-	_, h = Widgets:SectionHeader(parent, "GENERAL", y); y = y - h
+	local pv = E.private.WT.misc
+	-- Some of these switches arm a hook or install a CVar once at load, so the
+	-- best a setter can do is take the value and offer the reload. The rest are
+	-- re-read on every callback and are pushed into their module instead.
+	local pvSet = function(key)
+		return function(value)
+			pv[key] = value
+			PromptReload()
+		end
+	end
+	local dbSet = function(key, module, method)
+		return function(value)
+			db[key] = value
+			if module then SafeModuleCall(module, method) end
+		end
+	end
+	local automationDisabled = function() return not db.automation.enable end
+	local sa = W.Modules.SpellActivationAlert
+	local saUpdate = function() SafeModuleCall(sa, "Update") end
+	local saPreview = function()
+		SafeModuleCall(sa, "Update")
+		SafeModuleCall(sa, "Preview")
+	end
+	local saDisabled = function() return not db.spellActivationAlert.enable end
+
+	_, h = Widgets:SectionHeader(parent, L["MISC"], y); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Pause to slash"],
+		  tooltip = L["Just for Chinese and Korean players"],
+		  getValue = DBGet(pv, "pauseToSlash"), setValue = pvSet("pauseToSlash") },
+		{ type = "toggle", text = L["Math Without Kanji"],
+		  tooltip = L["Use alphabet rather than kanji (Only for Chinese players)"],
+		  getValue = DBGet(pv, "noKanjiMath"), setValue = pvSet("noKanjiMath") }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Disable Talking Head"],
+		  tooltip = L["Disable Blizzard Talking Head."],
+		  getValue = DBGet(db, "disableTalkingHead"), setValue = dbSet("disableTalkingHead") },
+		{ type = "toggle", text = L["Hide Crafter"],
+		  tooltip = L["Hide crafter name in the item tooltip."],
+		  getValue = DBGet(db, "hideCrafter"), setValue = dbSet("hideCrafter") }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["No Loot Panel"],
+		  tooltip = L["Disable Blizzard loot info which auto showing after combat overed."],
+		  getValue = DBGet(db, "noLootPanel"),
+		  setValue = dbSet("noLootPanel", W.Modules.Misc, "LootPanel") },
+		{ type = "toggle", text = L["Guild News IL"],
+		  tooltip = L["Show item level of each item in guild news."],
+		  getValue = DBGet(pv, "guildNewsItemLevel"), setValue = pvSet("guildNewsItemLevel") }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Skip Cut Scene"],
+		  getValue = DBGet(pv, "skipCutScene"),
+		  setValue = function(value)
+			  pv.skipCutScene = value
+			  SafeModuleCall(W.Modules.Misc, "SkipCutScene")
+			  PromptReload()
+		  end },
+		{ type = "toggle", text = L["Only Watched"],
+		  tooltip = L["Only skip watched cut scene. (some cut scenes can't be skipped)"],
+		  disabled = function() return not pv.skipCutScene end,
+		  getValue = DBGet(pv, "onlyStopWatched"), setValue = DBSet(pv, "onlyStopWatched") }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["View SC Group"],
+		  tooltip = L["Let you can view the group created by Simplified Chinese players."],
+		  getValue = DBGet(pv, "addCNFilter"), setValue = pvSet("addCNFilter") },
+		{ type = "toggle", text = L["Anti-override"],
+		  tooltip = L["Unblock the profanity filter and disable model override."],
+		  getValue = DBGet(pv, "antiOverride"), setValue = pvSet("antiOverride") }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Auto Toggle Chat Bubble"],
+		  tooltip = L["Only show chat bubble in instance."],
+		  getValue = DBGet(pv, "autoToggleChatBubble"), setValue = pvSet("autoToggleChatBubble") },
+		(E.Forever and { type = "spacer" } or
+		 { type = "toggle", text = L["Reshii Wraps Upgrade"],
+		   tooltip = L["Middle click the character back slot to open the Reshii Wraps upgrade menu."],
+		   getValue = DBGet(pv, "reshiiWrapsUpgrade"), setValue = pvSet("reshiiWrapsUpgrade") })
+	); y = y - h
+
+	_, h = Widgets:SectionHeader(parent, L["AUTOMATION"], y); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Enable"],
+		  getValue = DBGet(db.automation, "enable"),
+		  setValue = dbSet("enable", W.Modules.Automation, "ProfileUpdate") },
+		{ type = "spacer" }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Auto Hide Map"],
+		  tooltip = L["Automatically close world map if player enters combat."],
+		  disabled = automationDisabled,
+		  getValue = DBGet(db.automation, "hideWorldMapAfterEnteringCombat"),
+		  setValue = dbSet("hideWorldMapAfterEnteringCombat") },
+		{ type = "toggle", text = L["Auto Hide Bag"],
+		  tooltip = L["Automatically close bag if player enters combat."],
+		  disabled = automationDisabled,
+		  getValue = DBGet(db.automation, "hideBagAfterEnteringCombat"),
+		  setValue = dbSet("hideBagAfterEnteringCombat") }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Accept Resurrect"],
+		  tooltip = L["Accept resurrect from other player automatically when you not in combat."],
+		  disabled = automationDisabled,
+		  getValue = DBGet(db.automation, "acceptResurrect"),
+		  setValue = dbSet("acceptResurrect") },
+		{ type = "toggle", text = L["Accept Combat Resurrect"],
+		  tooltip = L["Accept resurrect from other player automatically when you in combat."],
+		  disabled = automationDisabled,
+		  getValue = DBGet(db.automation, "acceptCombatResurrect"),
+		  setValue = dbSet("acceptCombatResurrect") }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Confirm Summon"],
+		  tooltip = L["Confirm summon from other player automatically."],
+		  disabled = automationDisabled,
+		  getValue = DBGet(db.automation, "confirmSummon"),
+		  setValue = dbSet("confirmSummon") },
+		{ type = "spacer" }
+	); y = y - h
+
+	-- Move Frames walks the whole frame tree once at login, so toggling it has to
+	-- go through a reload; the leaf switches are read on demand and do not.
+	local mv = pv.moveFrames
+	-- A running BlizzMove or MoveAnything owns the frames already, and this file
+	-- cannot unseat them, so every row below stays off in that case.
+	local mvBlocked = function()
+		return (W.Modules.MoveFrames and W.Modules.MoveFrames.StopRunning) and true or false
+	end
+	local mvDisabled = function() return mvBlocked() or not mv.enable end
+	_, h = Widgets:SectionHeader(parent, L["MOVE FRAMES"], y); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Enable"],
+		  disabled = mvBlocked,
+		  getValue = DBGet(mv, "enable"),
+		  setValue = function(value) mv.enable = value; PromptReload() end },
+		{ type = "spacer" }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["TSM Compatible"],
+		  tooltip = L["Fix the merchant frame showing when you using Trader Skill Master."],
+		  disabled = mvDisabled,
+		  getValue = DBGet(mv, "tradeSkillMasterCompatible"),
+		  setValue = DBSet(mv, "tradeSkillMasterCompatible") },
+		{ type = "spacer" }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Remember Positions"], disabled = mvDisabled,
+		  getValue = DBGet(mv, "rememberPositions"), setValue = DBSet(mv, "rememberPositions") },
+		{ type = "toggle", text = L["Auto Reset Off-screen Frames"],
+		  tooltip = L["Automatically clear the remembered position if the frame is off the screen."],
+		  disabled = mvDisabled,
+		  getValue = DBGet(mv, "autoResetOffScreenFrames"),
+		  setValue = DBSet(mv, "autoResetOffScreenFrames") }
+	); y = y - h
+	_, h = Widgets:Button(parent, L["Clear History"], y, function()
+		mv.framePositions = {}
+	end); y = y - h
+
+	local mute = pv.mute
+	local muteDisabled = function() return not mute.enable end
+	local muteSet = function(key)
+		return function(value)
+			mute[key] = value
+			SafeModuleCall(W.Modules.Misc, "Mute")
+		end
+	end
+	_, h = Widgets:SectionHeader(parent, L["MUTE"], y); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Enable"],
+		  tooltip = L["Disable some annoying sound effects."],
+		  getValue = DBGet(mute, "enable"), setValue = muteSet("enable") },
+		{ type = "spacer" }
+	); y = y - h
+	local mountIDs = { 63796, 229385, 339588, 312762, 40192, 121820 }
+	local mountRows = {}
+	for _, mountID in ipairs(mountIDs) do
+		-- The mount journal already localises these names; fall back to the id
+		-- when the API is missing so the row still says something usable.
+		local name = "#" .. mountID
+		if C_MountJournal and C_MountJournal.GetMountInfoByID then
+			local mountName = C_MountJournal.GetMountInfoByID(mountID)
+			if mountName and mountName ~= "" then name = mountName end
+		end
+		mountRows[#mountRows + 1] = { type = "toggle", text = name, disabled = muteDisabled,
+			getValue = function() return mute.mount[mountID] end,
+			setValue = function(value)
+				mute.mount[mountID] = value
+				SafeModuleCall(W.Modules.Misc, "Mute")
+			end }
+	end
+	for i = 1, #mountRows, 2 do
+		_, h = Widgets:DualRow(parent, y, mountRows[i], mountRows[i + 1] or { type = "spacer" })
+		y = y - h
+	end
+	-- Two of these are item names rather than phrases, so they come from the
+	-- item cache; translating them in the catalog would only drift.
+	local otherKeys = {
+		{ "Tortollan" },
+		{ "Crying" },
+		{ "Dragon" },
+		{ "Jewelcrafting" },
+		{ "Smolderheart", 180873 },
+		{ "Elegy of the Eternals", 188270 },
+	}
+	local otherRows = {}
+	for _, entry in ipairs(otherKeys) do
+		local key, itemID = entry[1], entry[2]
+		local text = L[key]
+		if itemID then
+			local itemName = C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(itemID)
+			if itemName then text = itemName end
+		end
+		otherRows[#otherRows + 1] = { type = "toggle", text = text, disabled = muteDisabled,
+			getValue = function() return mute.other[key] end,
+			setValue = function(value)
+				mute.other[key] = value
+				SafeModuleCall(W.Modules.Misc, "Mute")
+			end }
+	end
+	for i = 1, #otherRows, 2 do
+		_, h = Widgets:DualRow(parent, y, otherRows[i], otherRows[i + 1] or { type = "spacer" })
+		y = y - h
+	end
+
+	local saDB = db.spellActivationAlert
+	_, h = Widgets:SectionHeader(parent, L["SPELL ACTIVATION ALERT"], y); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "toggle", text = L["Enable"], tooltip = L["Spell activation alert frame customizations."],
+		  getValue = DBGet(saDB, "enable"),
+		  setValue = function(value) saDB.enable = value; saUpdate() end },
+		{ type = "toggle", text = L["Visibility"], disabled = saDisabled,
+		  getValue = CVarGetBool("displaySpellActivationOverlays"),
+		  setValue = CVarSetBool("displaySpellActivationOverlays") }
+	); y = y - h
+	_, h = Widgets:DualRow(parent, y,
+		{ type = "slider", text = L["Opacity"], min = 0, max = 1, step = 0.01, disabled = saDisabled,
+		  getValue = CVarGetNum("spellActivationOverlayOpacity"),
+		  setValue = function(value) CVarSetNum("spellActivationOverlayOpacity")(value); saPreview() end },
+		{ type = "slider", text = L["Scale"], min = 0.1, max = 5, step = 0.01, disabled = saDisabled,
+		  getValue = DBGet(saDB, "scale"),
+		  setValue = function(value) saDB.scale = value; saPreview() end }
+	); y = y - h
+
+	if not E.Forever then
+		local epd = db.exitPhaseDiving
+		local epdDisabled = function() return not epd.enable end
+		_, h = Widgets:SectionHeader(parent, L["EXIT PHASE DIVING"], y); y = y - h
+		_, h = Widgets:DualRow(parent, y,
+			{ type = "toggle", text = L["Enable"], tooltip = L["Add a button to exit phase diving."],
+			  getValue = DBGet(epd, "enable"),
+			  setValue = function(value)
+				  epd.enable = value
+				  SafeModuleCall(W.Modules.Misc, "UpdateExitPhaseDivingButton")
+			  end },
+			{ type = "spacer" }
+		); y = y - h
+		_, h = Widgets:DualRow(parent, y,
+			{ type = "slider", text = L["Width"], min = 5, max = 1000, step = 1, disabled = epdDisabled,
+			  getValue = DBGet(epd, "width"),
+			  setValue = function(value)
+				  epd.width = value
+				  SafeModuleCall(W.Modules.Misc, "UpdateExitPhaseDivingButton")
+			  end },
+			{ type = "slider", text = L["Height"], min = 5, max = 1000, step = 1, disabled = epdDisabled,
+			  getValue = DBGet(epd, "height"),
+			  setValue = function(value)
+				  epd.height = value
+				  SafeModuleCall(W.Modules.Misc, "UpdateExitPhaseDivingButton")
+			  end }
+		); y = y - h
+	end
+
+	-- Everything below this line writes client CVars rather than addon state.
+	_, h = Widgets:SectionHeader(parent, L["CVARS"], y); y = y - h
 	_, h = Widgets:DualRow(parent, y,
 		{ type = "toggle", text = "Auto Compare", tooltip = "Always compare items when hovering over them.",
 		  getValue = CVarGetBool("alwaysCompareItems"), setValue = CVarSetBool("alwaysCompareItems") },

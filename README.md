@@ -37,7 +37,8 @@
 | Unit Frames (Absorb, Role Icon, Tags) | ❌ Not ported | |
 | Skins | ❌ Not ported | |
 | Misc (Game Bar) | ✅ Done | System bar: clock and system info, 14 configurable buttons, three hearthstone keys, combat-lockdown safe; live and forever clients |
-| Misc (Move Frames, Mute, Automation, etc.) | ❌ Not ported | |
+| Misc (Move Frames, Mute, Automation, Skip Cut Scene, Spell Activation Alert and friends) | ✅ Done | Move frames, mute, automation, skip cut scene, spell activation alert, exit phase diving button, hide crafter, guild news item level, pause-to-slash |
+| Misc (Keybind Alias, LFG List) | ❌ Not ported | Depend on ElvUI action bar internals and KeystoneInfo |
 
 ## ❤️ Credits
 

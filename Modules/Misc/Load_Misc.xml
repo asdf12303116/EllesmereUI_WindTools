@@ -10,8 +10,6 @@
 	<Script file='ExtraBindingButtons.lua' />
 	<Script file='GuildNewsItemLevel.lua' />
 	<Script file='HideCrafter.lua' />
-	<Script file='KeybindAlias.lua' />
-	<Script file='KeybindTextAbove.lua' />
 	<Script file='LootPanel.lua' />
 	<Script file='Math.lua' />
 	<Script file='Mute.lua' />
@@ -20,7 +18,6 @@
 	<Script file='SkipCutScene.lua' />
 	<!-- Others -->
 	<Script file='Automation.lua' />
-	<Script file='LFGList.lua' />
 	<Script file='GameBar.lua' />
 	<Script file='MoveFrames.lua' />
 	<Script file='SpellActivationAlert.lua' />

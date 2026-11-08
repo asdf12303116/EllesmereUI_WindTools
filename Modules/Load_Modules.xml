@@ -4,5 +4,5 @@
 	<Script file="Combat\RaidMarkers.lua"/>
 	<Script file="UnitFrames\FriendlyNameplateOutline.lua"/>
 	<Script file="UnitFrames\QuickFocus.lua"/>
-	<Script file="Misc\GameBar.lua"/>
+	<Include file="Misc\Load_Misc.xml"/>
 </Ui>

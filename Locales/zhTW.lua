@@ -4,15 +4,22 @@ local L = EllesmereUI.RegisterLocale("zhTW")
 if not L then return end
 
 -- EllesmereUI migration shell
+L["AUTOMATION"] = "自動處理"
+L["CVARS"] = "CVar"
 L["Deferred"] = "暫緩"
 L["Disconnected"] = "已斷開"
+L["EXIT PHASE DIVING"] = "退出深潛"
 L["Interface"] = "介面"
 L["Items & Combat"] = "物品與戰鬥"
+L["MISC"] = "雜項"
+L["MOVE FRAMES"] = "移動框架"
+L["MUTE"] = "靜音"
 L["Mark this option page as migration-ready"] = "標記此選項頁已準備遷移"
 L["Migration shell for WindTools on EllesmereUI."] = "WindTools 在 EllesmereUI 上的遷移外殼。"
 L["Modules"] = "模組"
 L["Open Guild Frame"] = "開啟公會介面"
 L["Option Categories"] = "選項分類"
+L["SPELL ACTIVATION ALERT"] = "法術觸發提示"
 L["Shell"] = "外殼"
 L["Show disconnected module placeholders"] = "顯示已斷開模組佔位項"
 L["Smart Tab registers its chat edit box hook at login, so the change applies after a UI reload."] = "Smart Tab 在登入時註冊聊天輸入框鉤子，因此該變更會在重載介面後生效。"

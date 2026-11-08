@@ -4,11 +4,17 @@ local L = EllesmereUI.RegisterLocale("enUS")
 if not L then return end
 
 -- EllesmereUI migration shell
+L["AUTOMATION"] = true
 L["Advanced"] = true
+L["CVARS"] = true
 L["Deferred"] = true
 L["Disconnected"] = true
+L["EXIT PHASE DIVING"] = true
 L["Interface"] = true
 L["Items & Combat"] = true
+L["MISC"] = true
+L["MOVE FRAMES"] = true
+L["MUTE"] = true
 L["Mark this option page as migration-ready"] = true
 L["Migration shell for WindTools on EllesmereUI."] = true
 L["Modules"] = true
@@ -18,6 +24,7 @@ L["On"] = true
 L["Open Guild Frame"] = true
 L["Option Categories"] = true
 L["Press a key..."] = true
+L["SPELL ACTIVATION ALERT"] = true
 L["Shell"] = true
 L["Show disconnected module placeholders"] = true
 L["Smart Tab registers its chat edit box hook at login, so the change applies after a UI reload."] = true
