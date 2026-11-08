@@ -1,6 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local DL = W:NewModule("DamageMeterLayout", "AceEvent-3.0", "AceHook-3.0")
-local S = W.Modules.Skins ---@type Skins
+local DL = W:NewModule("DamageMeterLayout")
 local C = W.Utilities.Color
 
 local _G = _G
@@ -450,7 +449,7 @@ function DL:CreateContainer()
 	MainFrame:Point("BOTTOMRIGHT", E.UIParent, "BOTTOMRIGHT", -20, 20)
 	MainFrame:Size(600, 200)
 	MainFrame:CreateBackdrop("Transparent")
-	S:CreateShadow(MainFrame.backdrop, nil, nil, nil, nil, true)
+	MainFrame:CreateShadow(3)
 
 	MainFrame:Hide()
 
@@ -477,8 +476,7 @@ function DL:CreateContainer()
 	PreviewFrame:Point("TOPLEFT", MainFrame, "TOPLEFT", -4, 4)
 	PreviewFrame:Point("BOTTOMRIGHT", MainFrame, "BOTTOMRIGHT", 4, -4)
 	PreviewFrame:SetTemplate("Default")
-	S:CreateShadow(PreviewFrame)
-	S:BindShadowColorWithBorder(PreviewFrame)
+	PreviewFrame:CreateShadow()
 	PreviewFrame:SetBackdropColor(0, 0, 0, 0)
 	PreviewFrame:SetBackdropBorderColor(C.ExtractRGBFromTemplate("rose-500"))
 
@@ -557,11 +555,6 @@ function DL:ADDON_LOADED(_, addonName)
 end
 
 function DL:Initialize()
-	if E.private.skins.blizzard.enable and E.private.skins.blizzard.damageMeter then
-		ELVUI_SKIN_VISUAL_LEFT_INSET = 13
-		ELVUI_SKIN_VISUAL_RIGHT_INSET = 18
-	end
-
 	self.db = E.db.WT.combat.damageMeterLayout
 	self.originalState = self.originalState or {}
 	self.managedMeters = self.managedMeters or {}

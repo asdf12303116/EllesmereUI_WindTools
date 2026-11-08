@@ -25,8 +25,7 @@
 | **Chat Bar** | ✅ Done | Channel switching bar, block/text styles, auto-hide, mouseover |
 | **Smart Tab** | ✅ Done | Tab channel cycling, whisper history, channel toggles |
 | Item (Fast Loot, Trade, Inspect, Item Level, Contacts, Delete Item, Already Known, Merchant Pages) | ✅ Done | Delete Item, Fast Loot, Trade, Merchant Pages, Already Known, Contacts, Inspect, Item Level - eight modules |
-| Combat (Raid Markers) | ✅ Done | Target/world markers, ready check, combat log, and pull countdown |
-| Combat (Combat Alert, Quick Keystone) | ❌ Not ported | |
+| Combat (Raid Markers, Combat Alert, Destroy Totem, Quick Keystone, Damage Meter) | ✅ Done | Target/world markers, ready check, combat log, pull countdown, combat alert, totem keys, keystone, and damage meter layouts |
 | Maps (Super Tracker, Minimap Buttons, Rectangle Minimap, World Map, Instance Difficulty, Event Tracker) | ❌ Not ported | |
 | Quest (Objective Tracker, Turn In, Switch Buttons) | ❌ Not ported | |
 | Social (Chat Link, Chat Text, Context Menu, Emote, Friend List) | ❌ Not ported | |

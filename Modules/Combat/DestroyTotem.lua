@@ -1,8 +1,9 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local DT = W:NewModule("DestroyTotem", "AceEvent-3.0")
+local DT = W:NewModule("DestroyTotem")
 
 local format = format
 
+local ClearOverrideBindings = ClearOverrideBindings
 local CreateFrame = CreateFrame
 local SetOverrideBindingClick = SetOverrideBindingClick
 
@@ -28,9 +29,15 @@ end
 
 function DT:SetupKeyBindings()
 	for slot = 1, MAX_TOTEMS do
-		local key = self.db.keys and self.db.keys[slot]
+		-- The buttons only exist once the module has been enabled for a session,
+		-- and a binding set before that would have nothing to click.
+		local button = DT.Buttons[slot]
+		local key = self.db and self.db.keys and self.db.keys[slot]
+		-- Clearing first is what makes an unbound slot actually let go: the
+		-- override the previous key set survives until it is removed.
+		ClearOverrideBindings(button)
 		if key and key ~= "" and key ~= "NONE" then
-			SetOverrideBindingClick(DT.Buttons[slot], true, key, DT.Buttons[slot]:GetName())
+			SetOverrideBindingClick(button, true, key, button:GetName())
 		end
 	end
 end

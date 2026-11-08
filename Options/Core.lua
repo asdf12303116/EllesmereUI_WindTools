@@ -26,9 +26,18 @@ function addon.RegisterOptionBuilder(categoryKey, fn)
 	addon.OptionBuilders[categoryKey] = fn
 end
 
-function addon.L(text)
-	return EllesmereUI.L and EllesmereUI.L(text) or text
-end
+-- Option pages write L["KEY"] for a literal key and L("text") when they already
+-- hold a string, so this is a table that is also callable rather than a plain
+-- function. Indexing a function was a latent runtime error in every page that
+-- used the bracket form.
+addon.L = setmetatable({}, {
+	__call = function(_, text)
+		return EllesmereUI.L and EllesmereUI.L(text) or text
+	end,
+	__index = function(_, key)
+		return EllesmereUI.L and EllesmereUI.L(key) or key
+	end,
+})
 
 function addon.MakeHeader(cat, module, sub)
 	local L = EllesmereUI.L or function(s) return s end

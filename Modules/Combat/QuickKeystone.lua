@@ -1,5 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local QK = W:NewModule("QuickKeystone", "AceHook-3.0", "AceEvent-3.0")
+local QK = W:NewModule("QuickKeystone")
 
 local _G = _G
 
@@ -23,29 +23,29 @@ function QK:PutKeystone()
 	end
 end
 
-function QK:UpdateHook(event, addon)
+---Hook the keystone frame once and gate the work on the setting instead of
+---adding and removing the hook: Blizzard script handlers cannot be unhooked.
+---@param event string?
+---@param addonName string?
+function QK:UpdateHook(event, addonName)
 	if event then
-		if addon == "Blizzard_ChallengesUI" then
-			self:UnregisterEvent("ADDON_LOADED")
-		else
+		if addonName ~= "Blizzard_ChallengesUI" then
 			return
 		end
+		self:UnregisterEvent("ADDON_LOADED")
 	end
 
 	local frame = _G.ChallengesKeystoneFrame
-	if not frame then
+	if not frame or self.hookedFrame == frame then
 		return
 	end
 
-	if self.db.enable then
-		if not self:IsHooked(frame, "OnShow") then
-			self:SecureHookScript(frame, "OnShow", "PutKeystone")
+	self.hookedFrame = frame
+	frame:HookScript("OnShow", function()
+		if self.db and self.db.enable then
+			self:PutKeystone()
 		end
-	else
-		if self:IsHooked(frame, "OnShow") then
-			self:Unhook(frame, "OnShow")
-		end
-	end
+	end)
 end
 
 function QK:ProfileUpdate()

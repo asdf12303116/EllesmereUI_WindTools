@@ -51,7 +51,7 @@ local MODULES = {
 	{
 		key = "Combat",
 		title = "Combat",
-		description = "World markers placed from a movable bar.",
+		description = "World markers, combat alerts, totem keys, keystones, and damage meter layouts.",
 		pages = { "Combat" },
 	},
 	{
