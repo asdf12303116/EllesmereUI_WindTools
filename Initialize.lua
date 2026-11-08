@@ -296,6 +296,14 @@ W:RegisterEvent("PLAYER_LOGIN", function()
     -- Modules\Misc\Core.lua gates its ADDON_LOADED handler on this flag,
     -- so every Misc module silently never ran before it was set.
     E.initialized = true
+    -- The ported modules call ElvUI frame methods (frame:Size, frame:Point,
+    -- frame:SetTemplate and about twenty more). They are installed here
+    -- rather than at file scope because the per-object-type pass has to walk
+    -- the Blizzard frames that already exist, and it has to happen before
+    -- any module initializes.
+    if E.InstallFrameAPI then
+        SafeCall(E.InstallFrameAPI, E)
+    end
     SafeCall(W.InitializeModules, W)
     -- The plugin API can be called at any point after EllesmereUI's chunk has
     -- run, but the pages read the profile DB, so this waits until InitDB did.

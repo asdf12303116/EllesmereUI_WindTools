@@ -186,7 +186,6 @@ V.misc = {
 	---@class PrivateDB.misc.moveFrames
 	moveFrames = {
 		enable = true,
-		elvUIBags = true,
 		tradeSkillMasterCompatible = true,
 		rememberPositions = false,
 		autoResetOffScreenFrames = true,

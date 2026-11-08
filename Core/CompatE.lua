@@ -221,6 +221,8 @@ local function CreateCompatE()
 			-- the universal base texture (equivalent to ElvUI's normTex).
 			normTex = "Interface\\Buttons\\WHITE8x8",
 			glossTex = "Interface\\Buttons\\WHITE8x8",
+			-- ElvUI calls this blankTex; it is the same white pixel.
+			blankTex = "Interface\\Buttons\\WHITE8x8",
 		},
 		-- EllesmereUI ships no media library of its own, so the few textures
 		-- and chat logos the ported modules reference are bundled with this
@@ -324,6 +326,7 @@ local function CreateCompatE()
 			MinusButton = "MinusButton",
 			PlusButton = "PlusButton",
 			White8x8 = "White8x8",
+			GlowTex = "GlowTex",
 			BagQuestIcon = "BagQuestIcon",
 		}
 		for key, file in pairs(textures) do
@@ -631,6 +634,51 @@ local function CreateCompatE()
 		return faction, localized
 	end
 
+	-----------------------------------------------------------------------
+	--  Unit auras
+	--
+	--  ElvUI returned the packed aura tuple. Modules only test for presence
+	--  (and occasionally read name/spellID), so the aura table is enough and
+	--  avoids depending on ElvUltimate's unpacking helper.
+	-----------------------------------------------------------------------
+
+	function E:GetAuraData(unit, index, filter)
+		local data = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex and C_UnitAuras.GetAuraDataByIndex(unit, index, filter)
+		if not data then
+			return nil
+		end
+		return data
+	end
+
+	local function FindAuraBy(key, value, unit, filter, index)
+		local data = E:GetAuraData(unit, index, filter)
+		if not data then
+			return nil
+		end
+
+		local name, spellID = data.name, data.spellId
+		if E:NotSecretValue(name) and E:NotSecretValue(spellID) then
+			if key == "name" and name == value then
+				return data
+			elseif key == "spellID" and spellID == value then
+				return data
+			end
+		end
+
+		return FindAuraBy(key, value, unit, filter, index + 1)
+	end
+
+	-- C_UnitAuras answers the 12.0 secret value rules on both clients, so the
+	-- lookup walks the aura list instead of calling the removed UnitAura.
+	function E:GetAuraByID(unit, spellID, filter)
+		return FindAuraBy("spellID", spellID, unit, filter, 1)
+	end
+
+	function E:GetAuraByName(unit, name, filter)
+		return FindAuraBy("name", name, unit, filter, 1)
+	end
+
+
 	function E:GetMouseFocus()
 		if GetMouseFoci then
 			return GetMouseFoci()[1]
@@ -893,6 +941,742 @@ local function CreateCompatE()
 		EUI:RegisterUnlockElements(elements, "EllesmereUI_WindTools")
 	end
 
+	-----------------------------------------------------------------------
+	--  Texture coordinates and frames
+	--
+	--  ElvUI keeps its icon crop in E.TexCoords and swaps the Blizzard
+	--  backdrop coordinate builder out for a guarded one (the 12.0 secret
+	--  rules make the stock version throw on protected frames).
+	-----------------------------------------------------------------------
+
+	function E:GetTexCoords()
+		return self.TexCoords[1], self.TexCoords[2], self.TexCoords[3], self.TexCoords[4]
+	end
+
+	function E:SameTexCoords(left, right, top, bottom)
+		local c = self.TexCoords
+		return c[1] == left and c[2] == right and c[3] == top and c[4] == bottom
+	end
+
+	function E:ResetTexCoords(left, right, top, bottom)
+		if self:SameTexCoords(left, right, top, bottom) then
+			return
+		end
+
+		self:SetTexCoord(self.TexCoords[1], self.TexCoords[2], self.TexCoords[3], self.TexCoords[4])
+	end
+
+	function E:NotSecretTable(value)
+		if type(value) ~= "table" then
+			return self:NotSecretValue(value)
+		end
+
+		for key, entry in next, value do
+			if not self:NotSecretValue(key) or not self:NotSecretValue(entry) then
+				return false
+			end
+		end
+
+		return true
+	end
+
+	function E:NotSizeRestricted(frame)
+		if not frame or not frame.GetSize then
+			return true
+		end
+
+		local width, height = frame:GetSize()
+		return self:NotSecretValue(width) and self:NotSecretValue(height)
+	end
+
+	-- The stock backdrop coordinate builder reads frame:GetSize() and throws
+	-- once the size is a secret value, which happens on protected frames in
+	-- 12.0. This is ElvUI's guard, reused here because the ported modules
+	-- call SetTemplate on protected frames.
+	function E:SetupTextureCoordinates()
+		if self:NotSizeRestricted() and _G.BackdropTemplateMixin then
+			_G.BackdropTemplateMixin.SetupTextureCoordinates(self)
+		end
+	end
+
+	function E:ReplaceSetupTextureCoordinates(frame)
+		if frame and frame.SetupTextureCoordinates ~= self.SetupTextureCoordinates then
+			frame.SetupTextureCoordinates = self.SetupTextureCoordinates
+		end
+	end
+
+	function E:SetFontShadow(font, style, shadow, sR, sG, sB, sA, sX, sY)
+		if not font or not font.SetShadowColor then
+			return
+		end
+
+		local alpha = sA or (shadow and ((style == "" and 1) or 0.6)) or 0
+		font:SetShadowColor(sR or 0, sG or 0, sB or 0, alpha)
+		font:SetShadowOffset(sX or (shadow and 1) or 0, sY or (shadow and -1) or 0)
+	end
+
+	function E:GetFrameName(frame, fallback, allowDebug)
+		if allowDebug and frame.GetDebugName then
+			return frame:GetDebugName()
+		end
+
+		if frame.GetName then
+			return frame:GetName() or fallback
+		end
+
+		return fallback
+	end
+
+
+	-----------------------------------------------------------------------
+	--  ElvUI frame API
+	-----------------------------------------------------------------------
+	-- The ported modules were written against ElvUI's frame metatable
+	-- extensions: they call frame:Size(), frame:Point(), frame:SetTemplate()
+	-- and about twenty more methods that Blizzard frames do not have. There
+	-- are more than four hundred such call sites, so rewriting them is not
+	-- worth it -- the methods themselves are installed here instead. A name
+	-- is only added when the object type does not already define it, so
+	-- nothing Blizzard or another addon provides is ever replaced.
+	--
+	-- Installation is deferred to PLAYER_LOGIN (E:InstallFrameAPI): the
+	-- per-type pass needs the Blizzard frames to exist, and it has to run
+	-- before W:InitializeModules so module code can already call the API.
+
+	E.HiddenFrame = CreateFrame("Frame")
+	E.HiddenFrame:Hide()
+	E.frames = E.frames or {}
+	E.unitFrameElements = E.unitFrameElements or {}
+	E.texts = E.texts or {}
+	E.statusBars = E.statusBars or {}
+
+	-- Colour tables the ported skinning code unpacks. Both the named and the
+	-- indexed keys are filled in because call sites do both: some read
+	-- color.r, others unpack the table.
+	local function NewColorTable(r, g, b, a)
+		return { r = r, g = g, b = b, a = a, r, g, b, a }
+	end
+
+	E.media.bordercolor = NewColorTable(0, 0, 0, 1)
+	E.media.backdropcolor = NewColorTable(0.1, 0.1, 0.1, 1)
+	E.media.backdropfadecolor = NewColorTable(0.13, 0.13, 0.13, 0.69)
+	E.media.unitframeBorderColor = NewColorTable(0, 0, 0, 1)
+
+	local function DisablePixelSnap(frame)
+		if frame.SetSnapToPixelGrid then
+			frame:SetSnapToPixelGrid(false)
+			frame:SetTexelSnappingBias(0)
+		end
+
+		if frame.SetTexelSnappingBias then
+			frame:SetTexelSnappingBias(0)
+		end
+
+		if frame.GetStatusBarTexture then
+			local texture = frame:GetStatusBarTexture()
+			if texture then
+				DisablePixelSnap(texture)
+			end
+		end
+
+		frame.PixelSnapDisabled = true
+	end
+
+	local function WatchPixelSnap(frame, snap)
+		if frame.PixelSnapDisabled and snap then
+			frame.PixelSnapDisabled = nil
+		end
+	end
+
+	local function BackdropFrameLevel(frame, level)
+		frame:SetFrameLevel(level)
+
+		if frame.oborder then
+			frame.oborder:SetFrameLevel(level)
+		end
+
+		if frame.iborder then
+			frame.iborder:SetFrameLevel(level)
+		end
+	end
+
+	local function BackdropFrameLower(backdrop, parent)
+		local level = parent:GetFrameLevel()
+		local minus = level and (level - 1)
+
+		if minus and minus >= 0 then
+			BackdropFrameLevel(backdrop, minus)
+		else
+			BackdropFrameLevel(backdrop, 0)
+		end
+	end
+
+	-- Per-template border and backdrop colours. EllesmereUI has no colour
+	-- settings page, so the four tables above are the only source.
+	local function GetTemplate(template, isUnitFrameElement)
+		local border = isUnitFrameElement and E.media.unitframeBorderColor or E.media.bordercolor
+		local backdropr, backdropg, backdropb, backdropa
+
+		if template == "ClassColor" then
+			local color = E.myClassColor
+			backdropr, backdropg, backdropb = E.media.backdropcolor.r, E.media.backdropcolor.g, E.media.backdropcolor.b
+			return color.r, color.g, color.b, 1, backdropr, backdropg, backdropb, 1
+		elseif template == "Transparent" then
+			backdropr = E.media.backdropfadecolor.r
+			backdropg = E.media.backdropfadecolor.g
+			backdropb = E.media.backdropfadecolor.b
+			backdropa = E.media.backdropfadecolor.a
+		else
+			backdropr = E.media.backdropcolor.r
+			backdropg = E.media.backdropcolor.g
+			backdropb = E.media.backdropcolor.b
+			backdropa = 1
+		end
+
+		return border.r, border.g, border.b, 1, backdropr, backdropg, backdropb, backdropa
+	end
+
+	local function Size(frame, width, height, ...)
+		local w = E:Scale(width)
+		frame:SetSize(w, (height and E:Scale(height)) or w, ...)
+	end
+
+	local function Width(frame, width, ...)
+		frame:SetWidth(E:Scale(width), ...)
+	end
+
+	local function Height(frame, height, ...)
+		frame:SetHeight(E:Scale(height), ...)
+	end
+
+	local function OffsetFrameLevel(frame, offset, secondary)
+		local level = (secondary or frame):GetFrameLevel()
+		frame:SetFrameLevel(level + (offset or 0))
+	end
+
+	local function Point(obj, arg1, arg2, arg3, arg4, arg5, ...)
+		if not arg2 then
+			arg2 = obj:GetParent()
+		end
+
+		if type(arg2) == "number" then
+			arg2 = E:Scale(arg2)
+		end
+		if type(arg3) == "number" then
+			arg3 = E:Scale(arg3)
+		end
+		if type(arg4) == "number" then
+			arg4 = E:Scale(arg4)
+		end
+		if type(arg5) == "number" then
+			arg5 = E:Scale(arg5)
+		end
+
+		obj:SetPoint(arg1, arg2, arg3, arg4, arg5, ...)
+	end
+
+	local function GrabPoint(obj, pointValue)
+		if type(pointValue) == "string" then
+			local pointIndex = tonumber(pointValue)
+
+			if not pointIndex then
+				for i = 1, obj:GetNumPoints() do
+					local point, relativeTo, relativePoint, xOfs, yOfs = obj:GetPoint(i)
+					if not point then
+						break
+					elseif point == pointValue then
+						return point, relativeTo, relativePoint, xOfs, yOfs
+					end
+				end
+			end
+
+			pointValue = pointIndex
+		end
+
+		return obj:GetPoint(pointValue)
+	end
+
+	local function NudgePoint(obj, xAxis, yAxis, noScale, pointValue, clearPoints)
+		xAxis = xAxis or 0
+		yAxis = yAxis or 0
+
+		local x = (noScale and xAxis) or E:Scale(xAxis)
+		local y = (noScale and yAxis) or E:Scale(yAxis)
+		local point, relativeTo, relativePoint, xOfs, yOfs = GrabPoint(obj, pointValue)
+
+		if clearPoints or obj:IsAnchoringRestricted() then
+			obj:ClearAllPoints()
+		end
+
+		obj:SetPoint(point, relativeTo, relativePoint, xOfs + x, yOfs + y)
+	end
+
+	local function PointXY(obj, xOffset, yOffset, noScale, pointValue, clearPoints)
+		local x = xOffset and ((noScale and xOffset) or E:Scale(xOffset))
+		local y = yOffset and ((noScale and yOffset) or E:Scale(yOffset))
+		local point, relativeTo, relativePoint, xOfs, yOfs = GrabPoint(obj, pointValue)
+
+		if clearPoints or obj:IsAnchoringRestricted() then
+			obj:ClearAllPoints()
+		end
+
+		obj:SetPoint(point, relativeTo, relativePoint, x or xOfs, y or yOfs)
+	end
+
+	local function SetOutside(obj, anchor, xOffset, yOffset, anchor2, noScale)
+		anchor = anchor or obj:GetParent()
+		xOffset = xOffset or E.Border
+		yOffset = yOffset or E.Border
+
+		local x = (noScale and xOffset) or E:Scale(xOffset)
+		local y = (noScale and yOffset) or E:Scale(yOffset)
+
+		if obj:IsAnchoringRestricted() or obj:GetPoint() then
+			obj:ClearAllPoints()
+		end
+
+		DisablePixelSnap(obj)
+		obj:SetPoint("TOPLEFT", anchor, "TOPLEFT", -x, y)
+		obj:SetPoint("BOTTOMRIGHT", anchor2 or anchor, "BOTTOMRIGHT", x, -y)
+	end
+
+	local function SetInside(obj, anchor, xOffset, yOffset, anchor2, noScale)
+		anchor = anchor or obj:GetParent()
+		xOffset = xOffset or E.Border
+		yOffset = yOffset or E.Border
+
+		local x = (noScale and xOffset) or E:Scale(xOffset)
+		local y = (noScale and yOffset) or E:Scale(yOffset)
+
+		if obj:IsAnchoringRestricted() or obj:GetPoint() then
+			obj:ClearAllPoints()
+		end
+
+		DisablePixelSnap(obj)
+		obj:SetPoint("TOPLEFT", anchor, "TOPLEFT", x, -y)
+		obj:SetPoint("BOTTOMRIGHT", anchor2 or anchor, "BOTTOMRIGHT", -x, y)
+	end
+
+	local function SetTemplate(frame, template, glossTex, ignoreUpdates, forcePixelMode, isUnitFrameElement, isNamePlateElement, noScale)
+		local borderr, borderg, borderb, bordera, backdropr, backdropg, backdropb, backdropa =
+			GetTemplate(template, isUnitFrameElement)
+
+		frame.template = template or "Default"
+		frame.glossTex = glossTex
+		frame.ignoreUpdates = ignoreUpdates
+		frame.forcePixelMode = forcePixelMode
+		frame.isUnitFrameElement = isUnitFrameElement
+		frame.isNamePlateElement = isNamePlateElement
+
+		if not frame.SetBackdrop and _G.BackdropTemplateMixin then
+			_G.Mixin(frame, _G.BackdropTemplateMixin)
+
+			if frame.OnSizeChanged then
+				frame:HookScript("OnSizeChanged", frame.OnBackdropSizeChanged)
+			end
+		end
+
+		E:ReplaceSetupTextureCoordinates(frame)
+
+		if not frame.SetBackdrop then
+			return
+		end
+
+		if template == "NoBackdrop" then
+			frame:SetBackdrop(nil)
+		else
+			local edgeSize = E.twoPixelsPlease and 2 or 1
+
+			frame:SetBackdrop({
+				edgeFile = E.media.blankTex,
+				bgFile = glossTex and (type(glossTex) == "string" and glossTex or E.media.glossTex) or E.media.blankTex,
+				edgeSize = noScale and edgeSize or E:Scale(edgeSize),
+			})
+
+			if frame.callbackBackdropColor then
+				frame:callbackBackdropColor()
+			else
+				frame:SetBackdropColor(backdropr, backdropg, backdropb, frame.customBackdropAlpha or backdropa or 1)
+			end
+
+			-- Non pixel-perfect clients need the extra inner and outer border
+			-- frames; EllesmereUI only ever runs in pixel mode, so this branch
+			-- stays off and the single 1px edge above is the whole border.
+			if not E.PixelMode and not forcePixelMode then
+				local backdrop = { edgeFile = E.media.blankTex, edgeSize = noScale and 1 or E:Scale(1) }
+				local level = frame:GetFrameLevel()
+
+				if not frame.iborder then
+					local border = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+					E:ReplaceSetupTextureCoordinates(border)
+					border:SetBackdrop(backdrop)
+					border:SetBackdropBorderColor(0, 0, 0, 1)
+					border:SetFrameLevel(level)
+					border:SetInside(frame, 1, 1, nil, noScale)
+					frame.iborder = border
+				end
+
+				if not frame.oborder then
+					local border = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+					E:ReplaceSetupTextureCoordinates(border)
+					border:SetBackdrop(backdrop)
+					border:SetBackdropBorderColor(0, 0, 0, 1)
+					border:SetFrameLevel(level)
+					border:SetOutside(frame, 1, 1, nil, noScale)
+					frame.oborder = border
+				end
+			end
+		end
+
+		if frame.forcedBorderColors then
+			borderr, borderg, borderb, bordera = unpack(frame.forcedBorderColors)
+		end
+
+		frame:SetBackdropBorderColor(borderr, borderg, borderb, bordera)
+
+		if not frame.ignoreUpdates then
+			if frame.isUnitFrameElement then
+				E.unitFrameElements[frame] = true
+			else
+				E.frames[frame] = true
+			end
+		end
+	end
+
+	local function CreateBackdrop(frame, template, glossTex, ignoreUpdates, forcePixelMode, isUnitFrameElement, isNamePlateElement, noScale, allPoints, frameLevel)
+		local parent = (frame.IsObjectType and frame:IsObjectType("Texture") and frame:GetParent()) or frame
+		local backdrop = frame.backdrop or CreateFrame("Frame", nil, parent)
+
+		if not frame.backdrop then
+			frame.backdrop = backdrop
+		end
+
+		backdrop:SetTemplate(template, glossTex, ignoreUpdates, forcePixelMode, isUnitFrameElement, isNamePlateElement, noScale)
+
+		if allPoints then
+			if allPoints == true then
+				backdrop:SetAllPoints()
+			else
+				backdrop:SetAllPoints(allPoints)
+			end
+		elseif forcePixelMode then
+			local border = E.twoPixelsPlease and 2 or 1
+			backdrop:SetOutside(frame, border, border, nil, noScale)
+		else
+			local border = (isUnitFrameElement and E.Border) or (isNamePlateElement and E.Border) or E.Border
+			backdrop:SetOutside(frame, border, border, nil, noScale)
+		end
+
+		if frameLevel then
+			if frameLevel == true then
+				BackdropFrameLevel(backdrop, parent:GetFrameLevel())
+			else
+				BackdropFrameLevel(backdrop, frameLevel)
+			end
+		else
+			BackdropFrameLower(backdrop, parent)
+		end
+	end
+
+	local function CreateShadow(frame, size, pass)
+		if not pass and frame.shadow then
+			return
+		end
+
+		size = size or 3
+
+		local glow = E.Media.Textures.GlowTex or E.media.blankTex
+		local offset = E.PixelMode and size or (size + 1)
+		local shadow = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+
+		E:ReplaceSetupTextureCoordinates(shadow)
+		shadow:SetFrameLevel(1)
+		shadow:SetOutside(frame, offset, offset, nil, true)
+		shadow:SetBackdrop({ edgeFile = glow, edgeSize = size })
+		shadow:SetBackdropColor(0, 0, 0, 0)
+		shadow:SetBackdropBorderColor(0, 0, 0, 0.9)
+
+		local strata = frame:GetFrameStrata()
+		if strata and E:NotSecretValue(strata) then
+			shadow:SetFrameStrata(strata)
+		end
+
+		if pass then
+			return shadow
+		end
+
+		frame.shadow = shadow
+	end
+
+	local function Kill(object)
+		if object.UnregisterAllEvents then
+			object:UnregisterAllEvents()
+			object:SetParent(E.HiddenFrame)
+		else
+			object.Show = object.Hide
+		end
+
+		object:Hide()
+	end
+
+	local STRIP_TEX = "Texture"
+	local STRIP_FONT = "FontString"
+
+	local function StripRegion(which, object, kill, zero)
+		if kill then
+			object:Kill()
+		elseif zero then
+			object:SetAlpha(0)
+		elseif which == STRIP_TEX then
+			object:SetTexture(nil)
+			object:SetAtlas("")
+		elseif which == STRIP_FONT then
+			object:SetText("")
+		end
+	end
+
+	-- Blizzard frames keep their decoration in these named sub-frames; ElvUI
+	-- strips them by name before skinning.
+	local STRIP_NAMES = {
+		"Inset", "inset", "InsetFrame", "LeftInset", "RightInset", "NineSlice", "BG", "Bg",
+		"border", "Border", "Background", "BorderFrame", "bottomInset", "BottomInset",
+		"bgLeft", "bgRight", "FilligreeOverlay", "PortraitOverlay", "ArtOverlayFrame",
+		"Portrait", "portrait", "ScrollFrameBorder", "ScrollUpBorder", "ScrollDownBorder",
+	}
+
+	local function StripType(which, object, kill, zero)
+		if object:IsObjectType(which) then
+			StripRegion(which, object, kill, zero)
+			return
+		end
+
+		if which == STRIP_TEX then
+			local frameName = object.GetName and object:GetName()
+
+			for i = 1, #STRIP_NAMES do
+				local key = STRIP_NAMES[i]
+				local blizz = object[key] or (frameName and _G[frameName .. key])
+
+				if blizz and blizz.StripTextures then
+					blizz:StripTextures(kill, zero)
+				end
+			end
+		end
+
+		if object.GetNumRegions then
+			for _, region in next, { object:GetRegions() } do
+				if region and region.IsObjectType and region:IsObjectType(which) then
+					StripRegion(which, region, kill, zero)
+				end
+			end
+		end
+	end
+
+	local function StripTextures(object, kill, zero)
+		StripType(STRIP_TEX, object, kill, zero)
+	end
+
+	local function StripTexts(object, kill, zero)
+		StripType(STRIP_FONT, object, kill, zero)
+	end
+
+	local function FontTemplate(fs, fontName, fontSize, fontStyle, skip)
+		fontStyle = fontStyle or E.db.general.fontOutline or ""
+		fontSize = fontSize or E.db.general.fontSize or 12
+
+		if fontStyle == "NONE" then
+			fontStyle = ""
+		end
+
+		if not skip then
+			E.texts[fs] = { fontName, fontSize, fontStyle }
+		end
+
+		if fs.CanBeAccessedInContext and not fs:CanBeAccessedInContext() then
+			return
+		end
+
+		if fs.SetScaleAnimationMode and _G.FontStringScaleAnimationMode then
+			fs:SetScaleAnimationMode(_G.FontStringScaleAnimationMode.Vertex)
+		end
+
+		local font
+		if fontName and E.Libs.LSM then
+			font = E.Libs.LSM:Fetch("font", fontName)
+		end
+
+		fs:SetFont(font or E.media.normFont, fontSize, fontStyle)
+		E:SetFontShadow(fs, fontStyle, string.find(fontStyle, "SHADOW") ~= nil)
+	end
+
+	local function StyleButton(button, noHover, noPushed, noChecked)
+		if not noHover then
+			button:SetHighlightTexture(E.media.blankTex)
+			local hover = button:GetHighlightTexture()
+			if hover then
+				hover:SetInside()
+				hover:SetBlendMode("ADD")
+				hover:SetColorTexture(1, 1, 1, 0.1)
+				button.hover = hover
+			end
+		end
+
+		if not noPushed then
+			button:SetPushedTexture(E.media.blankTex)
+			local pushed = button:GetPushedTexture()
+			if pushed then
+				pushed:SetInside()
+				pushed:SetBlendMode("ADD")
+				pushed:SetColorTexture(1, 1, 1, 0.16)
+				button.pushed = pushed
+			end
+		end
+
+		if not noChecked then
+			button:SetCheckedTexture(E.media.blankTex)
+			local checked = button:GetCheckedTexture()
+			if checked then
+				checked:SetInside()
+				checked:SetBlendMode("ADD")
+				checked:SetColorTexture(1, 1, 1, 0.2)
+				button.checked = checked
+			end
+		end
+	end
+
+	local function CreateCloseButton(frame, size, offset, texture, backdrop)
+		size = size or 16
+		offset = offset or -6
+
+		local button = CreateFrame("Button", nil, frame)
+		button:Size(size, size)
+		button:Point("TOPRIGHT", offset, offset)
+
+		if backdrop then
+			button:CreateBackdrop(nil, true)
+		end
+
+		local tex = button:CreateTexture(nil, "OVERLAY")
+		tex:SetAllPoints()
+		tex:SetTexture(texture or E.Media.Textures.Close)
+
+		button:SetScript("OnClick", function()
+			frame:Hide()
+		end)
+
+		return button
+	end
+
+	local function SetTexCoords(frame)
+		frame:SetTexCoord(unpack(E.TexCoords))
+	end
+
+	local function GetChild(frame, child, index, allowDebug)
+		local name = frame and child and E:GetFrameName(frame, nil, allowDebug)
+
+		if not name then
+			return nil
+		end
+
+		if not index then
+			index = ""
+		end
+
+		local main = _G[name]
+		local sub = main and main[child .. index]
+
+		if sub then
+			return sub
+		end
+
+		return _G[name .. child .. index]
+	end
+
+	local API = {
+		Kill = Kill,
+		Size = Size,
+		Point = Point,
+		Width = Width,
+		Height = Height,
+		PointXY = PointXY,
+		GrabPoint = GrabPoint,
+		NudgePoint = NudgePoint,
+		SetOutside = SetOutside,
+		SetInside = SetInside,
+		SetTemplate = SetTemplate,
+		CreateBackdrop = CreateBackdrop,
+		CreateShadow = CreateShadow,
+		FontTemplate = FontTemplate,
+		StripTextures = StripTextures,
+		StripTexts = StripTexts,
+		StyleButton = StyleButton,
+		OffsetFrameLevel = OffsetFrameLevel,
+		CreateCloseButton = CreateCloseButton,
+		SetTexCoords = SetTexCoords,
+		GetChild = GetChild,
+	}
+
+	local function AddAPI(object)
+		local mt = getmetatable(object)
+		local mk = mt and mt.__index
+
+		if not mk then
+			return
+		end
+
+		for method, func in next, API do
+			if not object[method] then
+				mk[method] = func
+			end
+		end
+
+		if mk.DisabledPixelSnap then
+			return
+		end
+
+		for _, name in next, { "SetSnapToPixelGrid", "SetStatusBarTexture", "SetColorTexture", "SetVertexColor", "CreateTexture", "SetTexCoord", "SetTexture" } do
+			if mk[name] then
+				hooksecurefunc(mk, name, name == "SetSnapToPixelGrid" and WatchPixelSnap or DisablePixelSnap)
+			end
+		end
+
+		mk.DisabledPixelSnap = true
+	end
+
+	-- Installs the API on every object type that exists right now. Runs at
+	-- PLAYER_LOGIN, once, so later frames of those types inherit it.
+	function E:InstallFrameAPI()
+		if self.frameAPIInstalled then
+			return
+		end
+
+		self.frameAPIInstalled = true
+
+		local probe = CreateFrame("Frame")
+
+		AddAPI(probe)
+		AddAPI(probe:CreateTexture())
+		AddAPI(probe:CreateFontString())
+
+		local mask = probe:CreateMaskTexture()
+		if mask then
+			AddAPI(mask)
+		end
+
+		local handled = { Frame = true, Texture = true, FontString = true, MaskTexture = true }
+		local object = _G.EnumerateFrames and _G.EnumerateFrames()
+
+		while object do
+			local kind = object:GetObjectType()
+
+			if kind and not handled[kind] and not object:IsForbidden() then
+				AddAPI(object)
+				handled[kind] = true
+			end
+
+			object = _G.EnumerateFrames(object)
+		end
+	end
 	return E
 end
 

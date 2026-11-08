@@ -1,6 +1,5 @@
-local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
+local W, F, E = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI
 local MF = W.Modules.MoveFrames ---@class MoveFrames
-local B = E:GetModule("Bags")
 
 local _G = _G
 local pairs = pairs
@@ -660,33 +659,6 @@ function MF:HandleAddon(_, addon)
 	end)
 end
 
-function MF:HandleElvUIBag(frameName)
-	if not self.db.elvUIBags then
-		return
-	end
-	local frame = B[frameName]
-
-	if not frame or framePaths[frame] then
-		return
-	end
-
-	frame:SetScript("OnDragStart", function(dragFrame)
-		dragFrame:StartMoving()
-	end)
-
-	if frame.helpButton then
-		frame.helpButton:SetScript("OnEnter", function(helpButton)
-			local GameTooltip = _G.GameTooltip
-			GameTooltip:SetOwner(helpButton, "ANCHOR_TOPLEFT", 0, 4)
-			GameTooltip:ClearLines()
-			GameTooltip:AddDoubleLine(L["Drag"] .. ":", L["Temporary Move"], 1, 1, 1)
-			GameTooltip:AddDoubleLine(L["Hold Control + Right Click:"], L["Reset Position"], 1, 1, 1)
-			GameTooltip:Show()
-		end)
-	end
-
-	framePaths[frame] = "ElvUI_" .. frameName
-end
 
 ---Check if the MoveFrames module is running
 ---@return boolean Whether the MoveFrames module is running
@@ -773,10 +745,6 @@ function MF:Initialize()
 			self:HandleAddon(nil, addon)
 		end
 	end
-
-	-- ElvUI Bag & Bank Frames
-	F.TaskManager:OutOfCombat(self.HandleElvUIBag, self, "BagFrame")
-	F.TaskManager:OutOfCombat(self.HandleElvUIBag, self, "BankFrame")
 
 	local GetBagsShown = _G.ContainerFrameSettingsManager.GetBagsShown
 	self:SecureHook(_G.ContainerFrameSettingsManager, "GetBagsShown", function()

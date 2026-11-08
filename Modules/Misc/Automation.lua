@@ -1,5 +1,5 @@
 local W, F, E, L = unpack((select(2, ...))) ---@type WindTools, Functions, ElvUI, LocaleTable
-local AM = W:NewModule("Automation", "AceEvent-3.0")
+local AM = W:NewModule("Automation") ---@class Automation : AceModule
 
 local _G = _G
 local securecall = securecall
@@ -78,25 +78,49 @@ function AM:RESURRECT_REQUEST(_, inviterName)
 	end
 end
 
+local events = {
+	"PLAYER_REGEN_ENABLED",
+	"PLAYER_REGEN_DISABLED",
+	"RESURRECT_REQUEST",
+	"CONFIRM_SUMMON",
+	"CANCEL_SUMMON",
+}
+
+local function registerEvents(module, enabled)
+	for i = 1, #events do
+		if enabled then
+			module:RegisterEvent(events[i])
+		else
+			module:UnregisterEvent(events[i])
+		end
+	end
+end
+
 function AM:Initialize()
 	self.db = E.db.WT.misc.automation
 	if not self.db or not self.db.enable or self.initialized then
 		return
 	end
 
-	self:RegisterEvent("PLAYER_REGEN_ENABLED")
-	self:RegisterEvent("PLAYER_REGEN_DISABLED")
-	self:RegisterEvent("RESURRECT_REQUEST")
-	self:RegisterEvent("CONFIRM_SUMMON")
-	self:RegisterEvent("CANCEL_SUMMON")
+	registerEvents(self, true)
+	self.initialized = true
 end
 
 function AM:ProfileUpdate()
 	self.db = E.db.WT.misc.automation
-	if self.db and not self.db.enable and self.initialized then
-		self:UnregisterEvent("PLAYER_REGEN_ENABLED")
-		self:UnregisterEvent("PLAYER_REGEN_DISABLED")
-		self:UnregisterEvent("RESURRECT_REQUEST")
+	if not self.db then
+		return
+	end
+
+	-- Every handler reads self.db on entry, so the events can stay registered
+	-- while the module is off. What must not happen is a module that was
+	-- switched on registering a second time, which is what initialized guards.
+	if self.db.enable and not self.initialized then
+		registerEvents(self, true)
+		self.initialized = true
+	elseif not self.db.enable and self.initialized then
+		registerEvents(self, false)
+		self.initialized = false
 	end
 end
 

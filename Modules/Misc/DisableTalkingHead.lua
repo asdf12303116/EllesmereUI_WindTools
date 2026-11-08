@@ -17,8 +17,21 @@ end
 function M:DisableTalkingHead()
 	if _G.TalkingHeadFrame then
 		self:HookTalkingHeadPlayCurrent()
-	else
-		self:SecureHook("TalkingHead_LoadUI", "HookTalkingHeadPlayCurrent")
+		return
+	end
+
+	-- TalkingHeadUI.xml is part of FrameXML, so the frame is normally there
+	-- long before addons load. The hook used to wait on TalkingHead_LoadUI,
+	-- which neither client defines any more, so wait for the login event and
+	-- look once more instead.
+	self:RegisterEvent("PLAYER_ENTERING_WORLD")
+end
+
+function M:PLAYER_ENTERING_WORLD()
+	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+
+	if _G.TalkingHeadFrame then
+		self:HookTalkingHeadPlayCurrent()
 	end
 end
 
